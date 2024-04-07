@@ -1,0 +1,53 @@
+function [Ps,Pd,Pv] = FreemanDurdenEx(T3)
+
+arguments
+    T3 (:,:,3,3)
+end
+
+[height,width,~,~] = size(T3);
+B = (T3(:,:,2,2) - T3(:,:,3,3)) / 2;
+E = real(T3(:,:,2,3) + T3(:,:,3,2)) / 2;
+cos4t = B ./ sqrt(B.^2 + E.^2);
+sin4t = E ./ sqrt(B.^2 + E.^2);
+cos2t = sqrt((1 + cos4t) / 2);
+sin2t = sin4t ./ (2 * cos2t);
+
+T3 = parallel.pool.Constant(shiftdim(T3, 2));
+
+Ps = zeros(height, width);
+Pd = zeros(height, width);
+Pv = zeros(height, width);
+parfor j = 1:width
+    for i = 1:height
+        q = [1 0 0; 0 cos2t(i,j) sin2t(i,j); 0 -sin2t(i,j) cos2t(i,j)];
+        t = T3.Value(:,:,i,j);
+        t1 = q * t * q';
+        if t1(1,1) <= t1(3,3)
+            Pv(i,j) = real(3 * t1(1,1));
+            Ps(i,j) = 0;
+            Pd(i,j) = real(t1(2,2) + t1(3,3) - 2 * t1(1,1));
+        else
+            Pv(i,j) = 3 * real(t1(3,3));
+            x11 = real(t1(1,1) - t1(3,3));
+            x22 = real(t1(2,2) - t1(3,3));
+            if abs(t1(1,2))^2 > x11 * x22
+                if x11>x22
+                    Ps(i,j) = x11 + x22;
+                    Pd(i,j) = 0;
+                else
+                    Ps(i,j) = 0;
+                    Pd(i,j) = x11 + x22;
+                end
+            else
+                if x11 > x22
+                    Ps(i,j) = x11 + abs(t1(1,2))^2 / x11;
+                    Pd(i,j) = x22 - abs(t1(1,2))^2 / x11;
+                else
+                    Ps(i,j) = x11 - abs(t1(1,2))^2 / x22;
+                    Pd(i,j) = x22 + abs(t1(1,2))^2 / x22;
+                end
+            end
+        end
+    end
+end
+end

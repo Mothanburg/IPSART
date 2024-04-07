@@ -3,11 +3,24 @@ function data = StoreRSData(data, prefix, dataName, fileExt, lowPrecison)
 arguments
     data (:,:,:)
     prefix string
-    dataName string
+    dataName string = ""
     fileExt string = ""
     lowPrecison logical = false
 end
 
+% 根据需要创建文件夹
+if ~exist(prefix, "dir")
+    mkdir(prefix);
+end
+
+if ~endsWith(prefix, [filesep, "/"])
+    prefix = strcat(prefix, filesep);
+end
+
+% 获取默认文件名
+if dataName == ""
+    dataName = inputname(1);
+end
 
 % 写入文件
 [lines,samples,bands] = size(data);

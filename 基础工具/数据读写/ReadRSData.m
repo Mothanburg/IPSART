@@ -6,6 +6,9 @@ arguments
     fileExt string = ""
 end
 
+if ~endsWith(prefix, [filesep, "/"])
+    prefix = strcat(prefix, filesep);
+end
 file_path = strcat(prefix, dataName, fileExt);
 header_path = strcat(prefix, dataName, ".hdr");
 if ~exist(header_path, "file") || ~exist(file_path, "file")

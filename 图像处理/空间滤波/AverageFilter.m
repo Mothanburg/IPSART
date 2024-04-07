@@ -15,15 +15,15 @@ end
 h = fspecial("average", [rowLook colLook]);
 
 if length(sz) > 2
-    page_cnt = prod(sz(3:end));
+    dim_cnt = prod(sz(3:end));
     result = zeros(sz);
 else
-    page_cnt = 1;
+    dim_cnt = 1;
     image = reshape(image, [sz 1]);
     result = zeros([sz 1]);
 end
 
-for idx = 1:page_cnt
+parfor idx = 1:dim_cnt
     result(:,:,idx) = imfilter(squeeze(image(:,:,idx)), h);
 end
 

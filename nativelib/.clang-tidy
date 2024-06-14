@@ -1,0 +1,35 @@
+Checks: '-*,
+        bugprone-*,
+        -bugprone-easily-swappable-parameters,
+        -bugprone-misplaced-widening-cast,
+        cert-dcl21-cpp,
+        clang-analyzer-core.*,
+        clang-analyzer-cplusplus.*,
+        cppcoreguidelines-narrowing-conversions,
+        google-explicit-constructor,
+        google-readability-casting,
+        misc-unconventional-assign-operator,
+        misc-unused-parameters,
+        modernize-redundant-void-arg,
+        modernize-use-bool-literals,
+        modernize-use-equals-default,
+        modernize-use-nullptr,
+        modernize-use-override,
+        readability-*，
+        -readability-identifier-length'
+
+CheckOptions:
+  - key:             readability-identifier-naming.ClassCase
+    value:           'CamelCase'
+  - key:             readability-identifier-naming.StructCase
+    value:           'CamelCase'
+  - key:             readability-identifier-naming.TypedefCase
+    value:           'CamelCase'
+  - key:             readability-identifier-naming.EnumCase
+    value:           'CamelCase'
+
+
+
+
+
+

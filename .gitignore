@@ -29,3 +29,12 @@ codegen/
 
 # Octave session info
 octave-workspace
+
+# Xmake cache
+.xmake/
+
+# Xmake build directory
+build/
+
+# MacOS Cache
+.DS_Store

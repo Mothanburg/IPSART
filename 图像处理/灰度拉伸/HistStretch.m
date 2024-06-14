@@ -1,7 +1,7 @@
 function result = HistStretch(bands, method, varargin)
 
 arguments
-    bands (:,:,:) double
+    bands (:,:,:) double {mustBeReal}
     method string
 end
 

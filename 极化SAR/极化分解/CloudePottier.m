@@ -12,13 +12,15 @@ alpha = zeros(height, width);
 A = zeros(height, width);
 parfor j = 1:width
     for i = 1:height
-        t = T3.Value(:,:,i,j);
-        [u,l] = eig(t);
-        l = sort(abs(diag(l)'), 'descend');
-        p = l / trace(t);
-        H(i,j) = -sum(p .* log(p)) / log(3);
-        alpha(i,j) = 180 * sum(p .* acos(abs(u(1,:)))) / pi;
-        A(i,j) = (l(2) - l(3)) / (l(2) + l(3));
+        t = squeeze(T3.Value(:,:,i,j));
+        [v,d] = eig(t);
+        d = diag(abs(d))'
+        p = d / sum(d);
+        H(i,j) = -sum(p .* log(p) / log(3));
+        alpha(i,j) = sum(p .* acosd(abs(v(1,:))));
+        l3 = min(d);
+        l2 = sum(d) - max(d) - l3;
+        A(i,j) = (l2 - l3) / (l2 + l3);
     end
 end
 

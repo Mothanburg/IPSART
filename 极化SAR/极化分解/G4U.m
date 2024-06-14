@@ -15,7 +15,11 @@ parfor j = 1:width
     for i = 1:height
         t0 = T3.Value(:,:,i,j);
         two_theta = atan(2 * real(t0(2,3)) / real(t0(2,2) - t0(3,3))) / 2;
-        r = [1 0 0; 0 cos(two_theta) sin(two_theta); 0 -sin(two_theta) cos(two_theta)];
+        if isnan(two_theta)
+            r = eye(3);
+        else
+            r = [1 0 0; 0 cos(two_theta) sin(two_theta); 0 -sin(two_theta) cos(two_theta)];
+        end
         t = r * t0 * r';
         t11 = real(t(1,1));
         t22 = real(t(2,2));

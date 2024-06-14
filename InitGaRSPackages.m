@@ -9,9 +9,10 @@ for name = packageList
     fn_add_package(path, name);
 end
 
-assignin("base", "L1PSH", @(x) HistStretch(x, "Linear Percent", 0, 99));
-assignin("base", "L2PSH", @(x) HistStretch(x, "Linear Percent", 0, 98));
-assignin("base", "L5PSH", @(x) HistStretch(x, "Linear Percent", 0, 95));
+assignin("base", "LS1PH", @(x) HistStretch(x, "Linear Percent", 0, 99));
+assignin("base", "LS2PH", @(x) HistStretch(x, "Linear Percent", 0, 98));
+assignin("base", "LS5PH", @(x) HistStretch(x, "Linear Percent", 0, 95));
+assignin("base", "LSOPT", @(x) HistStretch(x, "Optimized Linear"));
 
 end
 

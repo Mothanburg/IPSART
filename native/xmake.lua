@@ -4,7 +4,7 @@ set_warnings("all")
 
 add_requires("eigen", "openblas", "openmp")
 
-target("cGaRS")
+target("GaRS")
     set_kind("shared")
     add_includedirs("include/", { public = true })
     add_files("src/*.cpp")
@@ -16,5 +16,5 @@ target("test_cloudepottier")
     set_kind("binary")
     add_files("test/test_cloudepottier.cpp")
     add_tests("default")
-    add_deps("cGaRS")
+    add_deps("GaRS")
 

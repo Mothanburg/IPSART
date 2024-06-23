@@ -1,18 +1,29 @@
 function [H,alpha,A] = CloudePottier(T3)
 
 arguments
-    T3 (:,:,3,3)
+    T3 PolT3
 end
 
-[height,width,~,~] = size(T3);
-T3 = parallel.pool.Constant(shiftdim(T3, 2));
+% global GARS_CONFIG
 
-H = zeros(height, width);
-alpha = zeros(height, width);
-A = zeros(height, width);
+[H,alpha,A] = CloudePottierL0(T3);
+
+end
+
+
+function [H,alpha,A] = CloudePottierL0(T3)
+
+height = T3.Height;
+width = T3.Width;
+
+H = zeros(height, width, T3.Dtype);
+alpha = zeros(height, width, T3.Dtype);
+A = zeros(height, width, T3.Dtype);
+
+T3 = parallel.pool.Constant(T3);
 parfor j = 1:width
     for i = 1:height
-        t = squeeze(T3.Value(:,:,i,j));
+        t = T3.Value.getMatAt(i, j);
         [v,d] = eig(t);
         d = diag(abs(d))'
         p = d / sum(d);

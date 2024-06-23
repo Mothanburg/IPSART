@@ -1,11 +1,11 @@
-function data = StoreRSData(data, prefix, dataName, fileExt, lowPrecison)
+function data = StoreRSData(data, prefix, dataName, options)
 
 arguments
     data (:,:,:)
     prefix string
     dataName string = ""
-    fileExt string = ""
-    lowPrecison logical = false
+    options.fileExt string = ""
+    options.useLowPrecision logical = false
 end
 
 % 根据需要创建文件夹
@@ -23,29 +23,35 @@ if dataName == ""
 end
 
 % 写入文件
+filename = strcat(prefix, dataName, options.fileExt);
+if exist(filename, "file")
+    warning("The file %s alread exists, overwriting it.", filename);
+    delete(filename);
+end
+
 [lines,samples,bands] = size(data);
 if ~isreal(data)
-    if class(data) == "double" && ~lowPrecison
+    if class(data) == "double" && ~options.useLowPrecision
         data_type = "complex64";
     else
         % ENVI不支持非浮点数的复数类型
         data_type = "complex32";
     end
-
+    
     raw_bands = zeros(lines, samples * 2, bands);
     raw_bands(:,1:2:end,:) = real(data);
     raw_bands(:,2:2:end,:) = imag(data);
-
+    
     multibandwrite(...
         cast(raw_bands, class(data)), ...
-        strcat(prefix, dataName, fileExt), ...
+        filename, ...
         "bsq", ...
         "machfmt", "ieee-le" ...
         );
 else
     data_type = class(data);
-
-    if lowPrecison
+    
+    if options.useLowPrecision
         switch data_type
             case {"uint32", "uint64"}
                 data_type = "uint16";
@@ -58,10 +64,10 @@ else
                 data = cast(data, data_type);
         end
     end
-
+    
     multibandwrite(...
         data, ...
-        strcat(prefix, dataName, fileExt), ...
+        filename, ...
         "bsq", ...
         "machfmt", "ieee-le" ...
         );

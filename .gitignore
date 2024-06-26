@@ -36,5 +36,9 @@ octave-workspace
 # Xmake build directory
 build/
 
+# Auto generated file or dir
+*.autogen
+*autogen/
+
 # MacOS Cache
 .DS_Store

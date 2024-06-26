@@ -71,13 +71,15 @@ end
 GARS_CONFIG.CAUTION= "This struct is crucial for the GaRS library, " + ...
     "DO NOT modify or clear it.";
 
-% ------------- You can ONLY edit the following part ------------- %
+% ------------- You can ONLY edit the part below ------------- %
 
 % Set function alias.
 assignin("base", "LS1PH", @(x) HistStretch(x, "Linear Percent", 0, 99));
 assignin("base", "LS2PH", @(x) HistStretch(x, "Linear Percent", 0, 98));
 assignin("base", "LS5PH", @(x) HistStretch(x, "Linear Percent", 0, 95));
 assignin("base", "LSOPT", @(x) HistStretch(x, "Optimized Linear"));
+
+% ------------- You can ONLY edit the part above ------------- %
 
 end
 
@@ -97,7 +99,8 @@ if exist(manifest, "file")
     for internal = internals'
         internal_path = pjoin(pkgpath, internal);
         if ~exist(internal_path, "dir")
-            error("The internal package ""%s"" of ""%s"" doesn't exist, the GaRS library may be broken.", internal, pkg);
+            error("The internal package ""%s"" of ""%s"" doesn't exist, " + ...
+                "the GaRS library may be broken.", internal, pkg);
         end
         addpath(internal_path);
     end

@@ -6,6 +6,6 @@ end
 
 rehash("path");
 
-clear global;
+clear GARS_CONFIG;
 
 end

@@ -6,10 +6,13 @@ classdef PolC2 < PolM2
 
     methods (Static)
 
-        function C2 = fromPolChan(polCh1, polCh2, polType)
-            c11 = polCh1 .* conj(polCh1);
-            c12 = polCh1 .* conj(polCh2);
-            c22 = polCh2 .* conj(polCh2);
+        function C2 = fromPolChannels(Ch1, Ch2, polType)
+            arguments
+                polType string = "Unknown"
+            end
+            c11 = Ch1 .* conj(Ch1);
+            c12 = Ch1 .* conj(Ch2);
+            c22 = Ch2 .* conj(Ch2);
             C2 = PolC2(c11, real(c12), imag(c12), c22, polType);
         end
 
@@ -19,7 +22,7 @@ classdef PolC2 < PolM2
 
         function obj = PolC2(m11, m12, m22, polType)
             obj = obj@PolM2(m11, m12, m22);
-            obj.PolType = polType;
+            obj.PolType = upper(polType);
         end
 
         function T2 = toT2(obj)

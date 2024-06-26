@@ -12,43 +12,43 @@
 
 #include "omp.h"
 
-using complexd = std::complex<double>;
+using complexf = std::complex<float>;
+constexpr float pi = std::numbers::pi_v<float>;
 
-void CloudePottier(long height, long width, const double *t11,
-                     const double *t22, const double *t33, const double *t12_r,
-                     const double *t13_r, const double *t23_r,
-                     const double *t12_i, const double *t13_i,
-                     const double *t23_i, double *outH, double *outAlpha,
-                     double *outA) {
-  #pragma omp parallel for
+void CloudePottier(long height, long width, const float *t11, const float *t22,
+                   const float *t33, const float *t12_r, const float *t13_r,
+                   const float *t23_r, const float *t12_i, const float *t13_i,
+                   const float *t23_i, float *outH, float *outAlpha,
+                   float *outA) {
+#pragma omp parallel for
   for (int j = 0; j < width; j++) {
     for (int i = 0; i < height; i++) {
       int idx = j * width + i;
-      Eigen::Matrix3cd t;
-      t(0, 0) = complexd(t11[idx], 0.0);
-      t(0, 1) = complexd(t12_r[idx], t12_i[idx]);
-      t(0, 2) = complexd(t13_r[idx], t13_i[idx]);
+      Eigen::Matrix3cf t;
+      t(0, 0) = complexf(t11[idx], 0.0);
+      t(0, 1) = complexf(t12_r[idx], t12_i[idx]);
+      t(0, 2) = complexf(t13_r[idx], t13_i[idx]);
       t(1, 0) = std::conj(t(0, 1));
-      t(1, 1) = complexd(t22[idx], 0.0);
-      t(1, 2) = complexd(t23_r[idx], t23_i[idx]);
+      t(1, 1) = complexf(t22[idx], 0.0);
+      t(1, 2) = complexf(t23_r[idx], t23_i[idx]);
       t(2, 0) = std::conj(t(0, 2));
       t(2, 1) = std::conj(t(1, 2));
-      t(2, 2) = complexd(t33[idx], 0.0);
+      t(2, 2) = complexf(t33[idx], 0.0);
 
-      const Eigen::SelfAdjointEigenSolver<Eigen::Matrix3cd> eig(t);
-      const Eigen::Array3cd eig_vals = eig.eigenvalues().array();
-      const Eigen::Matrix3cd eig_vecs = eig.eigenvectors();
+      const Eigen::SelfAdjointEigenSolver<Eigen::Matrix3cf> eig(t);
+      const Eigen::Array3cf eig_vals = eig.eigenvalues().array();
+      const Eigen::Matrix3cf eig_vecs = eig.eigenvectors();
 
-      const Eigen::Array3d p = eig_vals.real() / eig_vals.sum().real();
-      outH[idx] = -(p * p.log()).sum() / std::log(3.0);
+      const Eigen::Array3f p = eig_vals.real() / eig_vals.sum().real();
+      outH[idx] = -(p * p.log()).sum() / std::log(3.0f);
 
-      const Eigen::Array3d alphas = eig_vecs.row(0).array().abs();
-      outAlpha[idx] = 180.0 * (p * alphas.acos()).sum() / std::numbers::pi;
+      const Eigen::Array3f alphas = eig_vecs.row(0).array().abs();
+      outAlpha[idx] = 180.0f * (p * alphas.acos()).sum() / pi;
 
-      const double p1 = p.maxCoeff();
-      const double p3 = p.minCoeff();
-      const double p_sum = p.sum();
-      outA[idx] = (p_sum - p1 - 2.0 * p3) / (p_sum - p1);
+      const float p1 = p.maxCoeff();
+      const float p3 = p.minCoeff();
+      const float p_sum = p.sum();
+      outA[idx] = (p_sum - p1 - 2.0f * p3) / (p_sum - p1);
     }
   }
 }

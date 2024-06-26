@@ -1,5 +1,5 @@
-#ifndef TINYC
-#define TINYC
+#ifndef GARS
+#define GARS
 
 // clang-format off
 #ifdef _WIN32
@@ -17,30 +17,33 @@
 extern "C" {
 #endif
 
+/*
+ * Native implementations of GaRS algorithms
+ * These interfaces are designed only for calling from matlab (or python?).
+ */
+GARS_API void RefinedLeeFilter(long height, long width, const float *c11,
+                               const float *c22, const float *c33,
+                               const float *c12_r, const float *c13_r,
+                               const float *c23_r, const float *c12_i,
+                               const float *c13_i, const float *c23_i,
+                               float *outC11, float *outC22, float *outC33,
+                               float *outC12_r, float *outC13_r,
+                               float *outC23_r, float *outC12_i,
+                               float *outC13_i, float *outC23_i);
 
-GARS_API void RefinedLeeFilterC3(long height, long width, const double *c11,
-                               const double *c22, const double *c33,
-                               const double *c12_r, const double *c13_r,
-                               const double *c23_r, const double *c12_i,
-                               const double *c13_i, const double *c23_i,
-                               double *outC11, double *outC22, double *outC33,
-                               double *outC12_r, double *outC13_r,
-                               double *outC23_r, double *outC12_i,
-                               double *outC13_i, double *outC23_I);
+GARS_API void CloudePottier(long height, long width, const float *t11,
+                            const float *t22, const float *t33,
+                            const float *t12_r, const float *t13_r,
+                            const float *t23_r, const float *t12_i,
+                            const float *t13_i, const float *t23_i, float *outH,
+                            float *outAlpha, float *outA);
 
-GARS_API void CloudePottier(long height, long width, const double *t11,
-                            const double *t22, const double *t33,
-                            const double *t12_r, const double *t13_r,
-                            const double *t23_r, const double *t12_i,
-                            const double *t13_i, const double *t23_i,
-                            double *outH, double *outAlpha, double *outA);
-
-GARS_API void Yamaguchi(long height, long width, const double *c11,
-                        const double *c22, const double *c33,
-                        const double *c12_r, const double *c13_r,
-                        const double *c23_r, const double *c12_i,
-                        const double *c13_i, const double *c23_i, double *outPs,
-                        double *outPd, double *outPv, double *outPh);
+GARS_API void Yamaguchi(long height, long width, const float *c11,
+                        const float *c22, const float *c33, const float *c12_r,
+                        const float *c13_r, const float *c23_r,
+                        const float *c12_i, const float *c13_i,
+                        const float *c23_i, float *outPs, float *outPd,
+                        float *outPv, float *outPh);
 
 #ifdef __cplusplus
 }

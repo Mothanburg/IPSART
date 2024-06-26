@@ -3,9 +3,6 @@ classdef (Abstract) PolM2 < PolMat
     properties
         Height
         Width
-    end
-
-    properties (Access=protected)
         m11
         m12_r
         m12_i

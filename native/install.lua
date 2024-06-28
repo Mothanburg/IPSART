@@ -6,7 +6,7 @@ function main(target)
             raise("please change mode '%s' to a kind of release mode.", curmode)
         end
 
-        local installdir = path.join("..", "matlab", "clib")
+        local installdir = path.join("..", "matlab", "bin")
         installdir = path.absolute(installdir, os.projectdir())
         if not os.exists(installdir) then
             os.mkdir(installdir)
@@ -17,20 +17,30 @@ function main(target)
         os.cp(headerpath, installdir)
 
         -- install all shared libs of depended packages
+        local installed = {}
         for _, pkg in ipairs(target:orderpkgs()) do
             if pkg:enabled() then
                 for _, libpath in ipairs(table.wrap(pkg:get("libfiles"))) do
                     if _is_shared_lib(target, libpath) then
                         local libname = path.filename(libpath)
-                        if os.isfile(path.join(installdir, libname)) then
-                            wprint("'%s' already exists in install dir, overwriting it.", libname)
+                        if installed[libname] then
+                            wprint("'%s' already exists, overwriting it.", libname)
                         end
                         os.cp(libpath, installdir)
+                        installed[libname] = true
                     end
                 end
             end
         end
 
+        -- install GaRS.dll
+        local tgt_file = target:targetfile()
+        os.cp(tgt_file, installdir)
+
+        -- if the platform is Windows, copy GaRS.lib for generating MATLAB interface
+        if target:is_plat("windows") then
+            os.cp((string.gsub(tgt_file, "%.dll", ".lib")), installdir)
+        end
 end
 
 function _is_shared_lib(target, libpath)

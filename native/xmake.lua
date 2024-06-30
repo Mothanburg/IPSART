@@ -14,10 +14,10 @@ target("GaRS")
     on_install("install")
 
 
-target("test_cloudepottier")
+target("test_runable")
     set_default(false)
     set_kind("binary")
-    add_files("test/test_cloudepottier.cpp")
+    add_files("test/test_runable.cpp")
     add_tests("default")
     add_deps("GaRS")
 

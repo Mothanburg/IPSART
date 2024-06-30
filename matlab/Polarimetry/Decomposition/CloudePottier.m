@@ -4,14 +4,25 @@ arguments
     T3 PolT3
 end
 
-% global GARS_CONFIG
+global GARS_CONFIG
 
-[H,alpha,A] = CloudePottierL0(T3);
+if GARS_CONFIG.CAPABILITY > 0
+    try
+        [H,alpha,A] = clib.gars.CloudePottier(T3.m11, T3.m22, T3.m33, T3.m12_r, ...
+            T3.m13_r, T3.m23_r, T3.m12_i, T3.m13_i, T3.m23_i);
+        return
+    catch
+        warning("An error occurred when calling library, fallback to matlab.\n" + ...
+            "    Error message: '%s'", e.message());
+    end
+end
+
+[H,alpha,A] = CP_matlab(T3);
 
 end
 
 
-function [H,alpha,A] = CloudePottierL0(T3)
+function [H,alpha,A] = CP_matlab(T3)
 
 height = T3.Height;
 width = T3.Width;

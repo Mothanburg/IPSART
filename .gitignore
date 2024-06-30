@@ -37,8 +37,10 @@ octave-workspace
 build/
 
 # Auto generated file or dir
-*.autogen
-*autogen/
+autogen*
+
+# binaries
+bin/
 
 # MacOS Cache
 .DS_Store

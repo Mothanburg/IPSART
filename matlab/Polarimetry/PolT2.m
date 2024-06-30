@@ -1,17 +1,17 @@
 classdef PolT2 < PolM2
-    
+
     methods (Static)
-        
+
         function T2 = fromHHVV(hh, vv)
             t11 = (hh + vv) .* conj(hh + vv);
             t12 = (hh + vv) .* conj(hh - vv);
             t22 = (hh - vv) .* conj(hh - vv);
-            
-            T2 = PolT2(t11, real(t12), imag(t12), t22);
+
+            T2 = PolT2(t11, t22, real(t12), imag(t12));
         end
-        
+
     end
-    
+
     methods
 
         function C2 = toC2(obj)
@@ -23,11 +23,11 @@ classdef PolT2 < PolM2
             M = [1, 1; 1, -1]';
             C = pagemtimes(pagemtimes(M, shiftdim(T, 2)), M');
             C = shiftdim(C, 2);
-            
-            C2 = PolC2(C(:,:,1,1), real(C(:,:,1,2)), imag(C(:,:,1,2)), ...
-                C(:,:,2,2), "HHVV");
+
+            C2 = PolC2(C(:,:,1,1), C(:,:,2,2), real(C(:,:,1,2)), ...
+                imag(C(:,:,1,2)), "HHVV");
         end
-        
+
     end
-    
+
 end

@@ -8,20 +8,22 @@ classdef PolC2 < PolM2
 
         function C2 = fromPolChannels(Ch1, Ch2, polType)
             arguments
+                Ch1
+                Ch2
                 polType string = "Unknown"
             end
             c11 = Ch1 .* conj(Ch1);
             c12 = Ch1 .* conj(Ch2);
             c22 = Ch2 .* conj(Ch2);
-            C2 = PolC2(c11, real(c12), imag(c12), c22, polType);
+            C2 = PolC2(c11, c22, real(c12), imag(c12), polType);
         end
 
     end
 
     methods
 
-        function obj = PolC2(m11, m12, m22, polType)
-            obj = obj@PolM2(m11, m12, m22);
+        function obj = PolC2(m11, m22, m12_r, m12_i, polType)
+            obj = obj@PolM2(m11, m22, m12_r, m12_i);
             obj.PolType = upper(polType);
         end
 
@@ -38,8 +40,7 @@ classdef PolC2 < PolM2
             T = pagemtimes(pagemtimes(M, shiftdim(C, 2)), M');
             T = shiftdim(T, 2);
 
-            T2 = PolT2(T(:,:,1,1), real(T(:,:,1,2)), imag(T(:,:,1,2), ...
-                T(:,:,2,2));
+            T2 = PolT2(T(:,:,1,1), T(:,:,2,2), real(T(:,:,1,2)), imag(T(:,:,1,2)));
         end
 
     end

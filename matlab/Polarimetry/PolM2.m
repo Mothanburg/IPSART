@@ -16,7 +16,7 @@ classdef (Abstract) PolM2 < PolMat
 
     methods
 
-        function obj = PolM2(m11, m12_r, m12_i, m22)
+        function obj = PolM2(m11, m22, m12_r, m12_i)
             [obj.Height,obj.Width] = size(m11);
 
             obj.m11 = zeros(obj.Height, obj.Width, class(m11));

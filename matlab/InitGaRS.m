@@ -26,46 +26,28 @@ end
 GARS_CONFIG.ImportedPackages = options.imports;
 
 % Check the existence of the native library.
-use_native = true;
-if ispc
-    nativelib = pjoin(root, "clib", "GaRS.dll");
-    if ~exist(nativelib, "file")
-        use_native = false;
-    end
-elseif isunix
-    nativelib = pjoin(root, "clib", "GaRS.so");
-    if ~exist(nativelib, "file")
-        use_native = false;
-    end
-elseif ismac
-    nativelib = pjoin(root, "clib", "GaRS.dylib");
-    if ~exist(nativelib, "file")
-        nativelib = pjoin(root, "clib", "GaRS.so");
-        if ~exist(nativelib, "file")
-            use_native = false;
+libpath = fullfile(root, "bin");
+if exist(libpath, "dir")
+    addpath(libpath);
+    % Test gpu capability
+    try
+        errno = clib.gars.GaRSTestOpenCL();
+        if errno == 0
+            loginfo("'%d' returned when testing GPU capability.");
+            GARS_CONFIG.CAPABILITY = 2; % The platform can use GPU
+        else
+            GARS_CONFIG.CAPABILITY = 1; % The platform can only use CPU
         end
+    catch
+        GARS_CONFIG.CAPABILITY = 0;     % No native library capability
+        rmpath(libpath);
     end
 else
-    use_native = false;
+    GARS_CONFIG.CAPABILITY = 0;
 end
 
-% Load the native library.
-if use_native
-    if libisloaded("GaRS")
-        warning("The status of the GaRS library may be unhealthy. " + ...
-            "Perhaps you should run ""UnloadGaRS""");
-        unloadlibrary("GaRS");
-    end
-    loadlibrary(nativelib);
-
-    GARS_CONFIG.NativeFunctions = libfunctions("GaRS");
-
-    % todo: check the platform of the native library.
-
-    GARS_CONFIG.PlatformLevel = 1;
-else
-    GARS_CONFIG.PlatformLevel = 0;
-end
+% Start parallel pool
+GARS_CONFIG.POOL = parpool();
 
 
 GARS_CONFIG.CAUTION= "This struct is crucial for the GaRS library, " + ...
@@ -86,18 +68,18 @@ end
 
 function import_package(root, pkg)
 
-pkgpath = pjoin(root, pkg);
+pkgpath = fullfile(root, pkg);
 if ~exist(pkgpath, "dir")
     error("Package ""%s"" doesn't exist, the GaRS library may be broken.", pkg);
 end
 
 addpath(pkgpath);
 % Check whether there is a manifest file or not.
-manifest = pjoin(pkgpath, "manifest.txt");
+manifest = fullfile(pkgpath, "manifest.txt");
 if exist(manifest, "file")
     internals = readlines(manifest);
     for internal = internals'
-        internal_path = pjoin(pkgpath, internal);
+        internal_path = fullfile(pkgpath, internal);
         if ~exist(internal_path, "dir")
             error("The internal package ""%s"" of ""%s"" doesn't exist, " + ...
                 "the GaRS library may be broken.", internal, pkg);
@@ -108,16 +90,9 @@ end
 
 end
 
-function path = pjoin(varargin)
-len = 2 * nargin - 1;
-full_args = cell(1, len);
-full_args(1:2:len) = varargin;
-full_args(2:2:len) = {filesep};
-path = strcat(full_args{:});
-end
-
-function loginfo(msg)
+function loginfo(msg, varargin)
 if evalin("caller", "options.verbose")
-    disp(msg);
+    fmt = sprintf(msg, varargin{:});
+    disp(fmt);
 end
 end

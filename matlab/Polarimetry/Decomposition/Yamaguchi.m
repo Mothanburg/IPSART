@@ -1,19 +1,40 @@
 function [Ps,Pd,Pv,Ph] = Yamaguchi(C3)
 
 arguments
-    C3 (:,:,3,3)
+    C3 PolC3
 end
 
-[height,width,~,~] = size(C3);
-Ps = zeros(height, width);
-Pd = zeros(height, width);
-Pv = zeros(height, width);
-Ph = zeros(height, width);
+global GARS_CONFIG
 
-C3 = parallel.pool.Constant(shiftdim(C3, 2));
+if GARS_CONFIG.CAPABILITY > 0
+    try
+        [Ps,Pd,Pv,Ph] = clib.gars.Yamaguchi(C3.m11, C3.m22, C3.m33, C3.m12_r, ...
+            C3.m13_r, C3.m23_r, C3.m12_i, C3.m13_i, C3.m23_i);
+        return
+    catch e
+        warning("An error occurred when calling library, fallback to matlab.\n" + ...
+            "    Error message: '%s'", e.message());
+    end
+end
+
+[Ps,Pd,Pv,Ph] = Ymg_matlab(C3);
+
+end
+
+function [Ps,Pd,Pv,Ph] = Ymg_matlab(C3)
+
+height = C3.Height;
+width = C3.Width;
+
+Ps = zeros(height, width, C3.Dtype);
+Pd = zeros(height, width, C3.Dtype);
+Pv = zeros(height, width, C3.Dtype);
+Ph = zeros(height, width, C3.Dtype);
+
+C3 = parallel.pool.Constant(C3);
 parfor j = 1:width
     for i = 1:height
-        c = C3.Value(:,:,i,j);
+        c = C3.Value.getMatAi(i, j);
 
         % 计算螺旋体方向
         if imag(c(1,2) + c(2,3)) > 0

@@ -21,8 +21,8 @@ void CloudePottier(long height, long width, const float *t11, const float *t22,
                    const float *t23_i, float *outH, float *outAlpha,
                    float *outA) {
 #pragma omp parallel for
-  for (int j = 0; j < width; j++) {
-    for (int i = 0; i < height; i++) {
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
       int idx = j * width + i;
       Eigen::Matrix3cf t;
       t(0, 0) = complexf(t11[idx], 0.0);

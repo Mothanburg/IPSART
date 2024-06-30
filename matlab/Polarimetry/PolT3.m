@@ -21,8 +21,8 @@ classdef PolT3 < PolM3
             t23 = (hh - vv) .* conj(xx);
             t33 = 2 * xx .* conj(xx);
 
-            T3 = PolT3(t11, real(t12), imag(t12), real(t13), imag(t13), t22, ...
-                real(t23), imag(t23), t33);
+            T3 = PolT3(t11, t22, t33, real(t12), real(t13), real(t23), imag(t12), ...
+                imag(t13), imag(t23));
         end
     end
 

@@ -1,7 +1,7 @@
 -- copy opencl sources to cpp const char*
 function main(target)
 
-        local cl_include = path.join(os.projectdir(), "include.autogen")
+        local cl_include = path.join(target:autogendir(), "opencl")
         if not os.isdir(cl_include) then
             os.mkdir(cl_include)
         end
@@ -9,7 +9,7 @@ function main(target)
         target:add("includedirs", cl_include)
 
         for _, src_path in ipairs(os.files(path.join(os.projectdir(), "src.opencl", "*.cl"))) do
-            local filename = format("cl.%s.h", path.basename(src_path))
+            local filename = format("%s.src.h", path.basename(src_path))
 
             local file = io.open(path.join(cl_include, filename), "w")
             if file then
@@ -19,7 +19,7 @@ function main(target)
                 file:print(format("#define CL_SOURCE_%s", string.upper(path.basename(src_path))))
 
                 file:print(format("// content of '%s'", path.filename(src_path)))
-                file:print(format("inline const char *src_%s = R\"OPENCLC(", path.basename(src_path)))
+                file:print(format("inline constexpr auto src_%s = R\"OPENCLC(", path.basename(src_path)))
                 local content = io.readfile(src_path)
                 file:print(content)
                 file:print(")OPENCLC\";")

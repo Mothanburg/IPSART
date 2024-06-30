@@ -11,8 +11,8 @@ classdef PolC3 < PolM3
             c23 = xx .* conj(vv);
             c33 = vv .* conj(vv);
 
-            C3 = PolC3(c11, real(c12), imag(c12), real(c13), imag(c13), c22, ...
-                real(c23), imag(c23), c33);
+            C3 = PolC3(c11, c22, c33, real(c12), real(c13), real(c23), imag(c12), ...
+                imag(c13), imag(c23));
         end
 
     end

@@ -18,12 +18,11 @@ constexpr float sqrt2 = std::numbers::sqrt2_v<float>;
 
 using complexf = std::complex<float>;
 
-GARS_API void Yamaguchi(long height, long width, const float *c11,
-                        const float *c22, const float *c33, const float *c12_r,
-                        const float *c13_r, const float *c23_r,
-                        const float *c12_i, const float *c13_i,
-                        const float *c23_i, float *outPs, float *outPd,
-                        float *outPv, float *outPh) {
+void Yamaguchi(long height, long width, const float *c11, const float *c22,
+               const float *c33, const float *c12_r, const float *c13_r,
+               const float *c23_r, const float *c12_i, const float *c13_i,
+               const float *c23_i, float *outPs, float *outPd, float *outPv,
+               float *outPh) {
 #pragma omp parallel for
   for (int j = 0; j < width; j++) {
     for (int i = 0; i < height; i++) {

@@ -20,7 +20,7 @@ classdef (Abstract) PolM3 < PolMat
     end
 
     methods
-        function obj = PolM3(m11, m12_r, m12_i, m13_r, m13_i, m22, m23_r, m23_i, m33)
+        function obj = PolM3(m11, m22, m33, m12_r, m13_r, m23_r, m12_i, m13_i, m23_i)
             [obj.Height,obj.Width] = size(m11);
 
             obj.m11 = zeros(obj.Height, obj.Width, class(m11));

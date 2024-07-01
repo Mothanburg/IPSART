@@ -8,12 +8,12 @@ global GARS_CONFIG
 
 if GARS_CONFIG.CAPABILITY > 0
     try
-        [Ps,Pd,Pv,Ph] = clib.gars.Yamaguchi(C3.m11, C3.m22, C3.m33, C3.m12_r, ...
-            C3.m13_r, C3.m23_r, C3.m12_i, C3.m13_i, C3.m23_i);
+        [Ps,Pd,Pv,Ph] = clib.gars.Yamaguchi(C3.m11, C3.m22, C3.m33, C3.m12_r, C3.m13_r, ...
+            C3.m23_r, C3.m12_i, C3.m13_i, C3.m23_i);
         return
     catch e
-        warning("An error occurred when calling library, fallback to matlab.\n" + ...
-            "    Error message: '%s'", e.message());
+        warning(e.identifier, "An error occurred when calling library, fallback to matlab.\n" + ...
+            "    Error message: %s", e.message);
     end
 end
 
@@ -34,7 +34,7 @@ Ph = zeros(height, width, C3.Dtype);
 C3 = parallel.pool.Constant(C3);
 parfor j = 1:width
     for i = 1:height
-        c = C3.Value.getMatAi(i, j);
+        c = C3.Value.getMatAt(i, j);
 
         % 计算螺旋体方向
         if imag(c(1,2) + c(2,3)) > 0

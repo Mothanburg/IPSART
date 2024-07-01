@@ -1,4 +1,4 @@
-function [azimuthLook,rangeLook,resolution] = CalculateNLooks(azimuthSpacing, rangeSpacing, incidenceAngle, gridSize)
+function [azimuthLook,rangeLook,resolution] = GetNumLook(azimuthSpacing, rangeSpacing, incidenceAngle, gridSize)
 
 arguments
     azimuthSpacing double

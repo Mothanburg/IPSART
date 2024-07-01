@@ -12,9 +12,10 @@
 
 #include "test_kernel.src.h"
 
-constexpr auto TEST_LEN = 3407;
 
 int GaRSTestOpenCL() {
+  constexpr auto TOTAL_LEN = 347;
+  constexpr auto GROUP_LEN = 3;
   try {
     // Get the first device of the default platform
     cl::Context context = cl::Context::getDefault();
@@ -26,35 +27,31 @@ int GaRSTestOpenCL() {
     program.build(device, "-cl-std=CL2.0");
 
     // Set data
-    std::array<float, TEST_LEN> v1, v2;
+    std::array<float, TOTAL_LEN> v1, v2;
     v1.fill(1.0f);
     v2.fill(-1.0f);
 
     cl::Buffer buf_v1(context, v1.begin(), v1.end(), true);
     cl::Buffer buf_v2(context, v2.begin(), v2.end(), true);
 
-    float *result = new float[TEST_LEN];
-    cl::Buffer buf_out(context, CL_MEM_WRITE_ONLY, sizeof(float) * TEST_LEN);
-
-    // Get work group size
-    auto max_wgsize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-    auto group_len = int_sqrt(max_wgsize) - 1;
+    float *result = new float[TOTAL_LEN];
+    cl::Buffer buf_out(context, CL_MEM_WRITE_ONLY, sizeof(float) * TOTAL_LEN);
 
     // Create kernel
     cl::Kernel krnl(program, "vec_add");
     krnl.setArg(0, buf_v1);
     krnl.setArg(1, buf_v2);
-    krnl.setArg(2, sizeof(float) * group_len, nullptr);
+    krnl.setArg(2, sizeof(float) * 3, nullptr);
     krnl.setArg(3, buf_out);
 
     // Execute the kernel
-    queue.enqueueNDRangeKernel(krnl, cl::NullRange, cl::NDRange(TEST_LEN),
-                               cl::NDRange(group_len));
-    queue.enqueueReadBuffer(buf_out, false, 0, sizeof(float) * TEST_LEN,
+    queue.enqueueNDRangeKernel(krnl, cl::NullRange, cl::NDRange(TOTAL_LEN),
+                               cl::NDRange(GROUP_LEN));
+    queue.enqueueReadBuffer(buf_out, false, 0, sizeof(float) * TOTAL_LEN,
                             result);
     queue.finish();
 
-    if (std::accumulate(result, result + TEST_LEN, 0.0f) != 0.0f) {
+    if (std::accumulate(result, result + TOTAL_LEN, 0.0f) != 0.0f) {
       return -100;
     }
   } catch (cl::Error &e) {

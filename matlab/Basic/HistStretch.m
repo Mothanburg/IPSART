@@ -41,7 +41,7 @@ switch method
         result = log10(bands - a + 1);
         result = result ./ max(result, [], [1 2]);
     otherwise
-        error("HistStretch:unknownStretchMethod", "未知的拉伸方法：%s", method);
+        error("Unknown stretch method: %s", method);
 end
 
 result = squeeze(result);

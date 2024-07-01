@@ -34,7 +34,7 @@ if startsWith(header.data_type, "complex")
         band_imag = raw(:,2:2:end,i);
         bands{i} = squeeze(band_real + 1i * band_imag);
     end
-    data = cast(cat(3, bands{:}), class(raw));
+    data = cat(3, bands{:});
 
 else
 

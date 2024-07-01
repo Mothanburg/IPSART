@@ -1,18 +1,20 @@
-function [H,alpha,A] = CloudePottier4DP(T2)
+function [H,alpha,A] = CloudePottier4DP(M2)
 
 arguments
-    T2 (:,:,2,2)
+    M2 PolM2
 end
 
-[height,width,~,~] = size(T2);
-H = zeros(height, width);
-alpha = zeros(height, width);
-A = zeros(height, width);
+height = M2.Height;
+width = M2.Width;
 
-T2 = parallel.pool.Constant(shiftdim(T2, 2));
+H = zeros(height, width, M2.Dtype);
+alpha = zeros(height, width, M2.Dtype);
+A = zeros(height, width, M2.Dtype);
+
+M2 = parallel.pool.Constant(M2);
 parfor j = 1:width
     for i = 1:height
-        t = squeeze(T2.Value(:,:,i,j));
+        t = M2.Value.getMatAt(i, j);
         [v,d] = eig(t);
         d = diag(abs(d))';
         p = d / sum(d);

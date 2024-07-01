@@ -13,6 +13,8 @@ GARS_CONFIG = struct();
 
 GARS_CONFIG.GaRSRoot = root;
 
+addpath(fullfile(root, "InternelUtil"));
+
 % Import function packages.
 try
     for pkg = options.imports

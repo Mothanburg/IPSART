@@ -1,19 +1,21 @@
 function [Ps,Pd,Pv,Ph] = G4U(T3)
 
 arguments
-    T3 (:,:,3,3)
+    T3 PolT3
 end
 
-[height,width,~,~] = size(T3);
-Ps = zeros(height, width);
-Pd = zeros(height, width);
-Pv = zeros(height, width);
-Ph = zeros(height, width);
+height = T3.Height;
+width = T3.Width;
 
-T3 = parallel.pool.Constant(shiftdim(T3, 2));
+Ps = zeros(height, width, T3.Dtype);
+Pd = zeros(height, width, T3.Dtype);
+Pv = zeros(height, width, T3.Dtype);
+Ph = zeros(height, width, T3.Dtype);
+
+T3 = parallel.pool.Constant(T3);
 parfor j = 1:width
     for i = 1:height
-        t0 = T3.Value(:,:,i,j);
+        t0 = T3.Value.getMatAt(i, j);
         two_theta = atan(2 * real(t0(2,3)) / real(t0(2,2) - t0(3,3))) / 2;
         if isnan(two_theta)
             r = eye(3);

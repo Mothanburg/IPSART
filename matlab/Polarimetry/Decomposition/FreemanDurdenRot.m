@@ -1,22 +1,24 @@
-function [Ps,Pd,Pv] = FreemanDurdenEx(T3)
+function [Ps,Pd,Pv] = FreemanDurdenRot(T3)
 
 arguments
-    T3 (:,:,3,3)
+    T3 PolT3
 end
 
-[height,width,~,~] = size(T3);
-B = (T3(:,:,2,2) - T3(:,:,3,3)) / 2;
-E = real(T3(:,:,2,3) + T3(:,:,3,2)) / 2;
+height = T3.Height;
+width = T3.Width;
+
+B = (T3.getPageAt(2, 2) - T3.getPageAt(3, 3)) / 2;
+E = real(T3.getPageAt(2, 3) + T3.getPageAt(3, 2)) / 2;
 cos4t = B ./ sqrt(B.^2 + E.^2);
 sin4t = E ./ sqrt(B.^2 + E.^2);
 cos2t = sqrt((1 + cos4t) / 2);
 sin2t = sin4t ./ (2 * cos2t);
 
-T3 = parallel.pool.Constant(shiftdim(T3, 2));
+Ps = zeros(height, width, T3.Dtype);
+Pd = zeros(height, width, T3.Dtype);
+Pv = zeros(height, width, T3.Dtype);
 
-Ps = zeros(height, width);
-Pd = zeros(height, width);
-Pv = zeros(height, width);
+T3 = parallel.pool.Constant(T3);
 parfor j = 1:width
     for i = 1:height
         q = [1 0 0; 0 cos2t(i,j) sin2t(i,j); 0 -sin2t(i,j) cos2t(i,j)];
@@ -50,4 +52,5 @@ parfor j = 1:width
         end
     end
 end
+
 end

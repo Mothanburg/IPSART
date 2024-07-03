@@ -1,12 +1,12 @@
 function result = HistStretch(bands, method, varargin)
 
 arguments
-    bands (:,:,:) double {mustBeReal}
+    bands (:,:,:) {mustBeReal}
     method string
 end
 
 arguments(Repeating)
-    varargin double
+    varargin {mustBeNumeric}
 end
 
 if length(size(bands)) < 3

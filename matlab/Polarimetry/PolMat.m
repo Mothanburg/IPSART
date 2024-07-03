@@ -3,6 +3,7 @@ classdef (Abstract) PolMat
     properties (Abstract)
         Height
         Width
+        Dim
     end
 
     properties (Abstract, Dependent)

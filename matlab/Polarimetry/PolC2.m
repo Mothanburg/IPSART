@@ -6,7 +6,7 @@ classdef PolC2 < PolM2
 
     methods (Static)
 
-        function C2 = fromPolChannels(Ch1, Ch2, polType)
+        function C2 = fromChannel(Ch1, Ch2, polType)
             arguments
                 Ch1
                 Ch2

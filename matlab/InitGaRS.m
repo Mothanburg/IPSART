@@ -1,7 +1,7 @@
 function InitGaRS(options)
 
 arguments
-    options.imports(1,:) string = ["Basic", "Data", "Polarimetry"]
+    options.imports(1,:) string = ["Utils", "Basic", "Data", "Polarimetry"]
     options.verbose = false
 end
 
@@ -31,6 +31,10 @@ GARS_CONFIG.ImportedPackages = options.imports;
 libpath = fullfile(root, "bin");
 if exist(libpath, "dir")
     addpath(libpath);
+    % For safety, we use out-of-process execution mode (if we can)
+    if ~isMATLABReleaseOlderThan("R2023a")
+        GARS_CONFIG.CLIB = clibConfiguration("gars", "ExecutionMode", "outofprocess");
+    end
     % Test gpu capability
     try
         errno = clib.gars.GaRSTestOpenCL();
@@ -49,7 +53,7 @@ else
 end
 
 % Start parallel pool
-GARS_CONFIG.POOL = parpool();
+% GARS_CONFIG.POOL = parpool();
 
 
 GARS_CONFIG.CAUTION= "This struct is crucial for the GaRS library, " + ...

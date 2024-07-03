@@ -1,42 +1,42 @@
-function [ms,mv,alpha,delta] = ModelBased4DP(C2, transmitPol)
+function [ms,mv,alpha,delta] = ModelBased4DP(C2, polTx)
 
 arguments
-    C2 (:,:,2,2)
-    transmitPol string
+    C2 PolC2
+    polTx string
 end
 
-switch transmitPol
-    case 'H'
-        [ms,mv,alpha,delta] = impl_H(C2);
-    case 'V'
-        [ms,mv,alpha,delta] = impl_V(C2);
-    otherwise
-        error('错误的发射极化');
-end
+[ms,mv,alpha,delta] = MBDP_matlab(C2, polTx);
 
 end
 
+function [ms,mv,alpha,delta] = MBDP_matlab(C2, polTx)
 
-function [ms,mv,alpha,delta] = impl_H(C2)
+height = C2.Height;
+width = C2.Width;
 
-[height,width,~,~] = size(C2);
-s1 = squeeze(abs(C2(:,:,1,1))+abs(C2(:,:,2,2)));
-s2 = squeeze(abs(C2(:,:,1,1))-abs(C2(:,:,2,2)));
-s3 = squeeze(2*real(C2(:,:,1,2)));
-s4 = squeeze(2*imag(C2(:,:,1,2)));
+s1 = C2.SPAN;
+s2 = C2.getPageAt(1, 1) - C2.getPageAt(2, 2);
+s3 = 2 * real(C2.getPageAt(1, 2));
+s4 = 2 * imag(C2.getPageAt(1, 2));
+
 a = 0.75;
-b = -2*s1+0.5*s2;
-c = s1.^2-s2.^2-s3.^2-s4.^2;
+if polTx == "H"
+    b = -2 * s1 + 0.5 * s2;
+else
+    b = -2 * s1 - 0.5 * s2;
+end
+c = s1.^2 - s2.^2 - s3.^2 - s4.^2;
 
-x1 = (-b+sqrt(b.^2-4*a.*c))./(2*a);
-x2 = (-b-sqrt(b.^2-4*a.*c))./(2*a);
-mv = zeros(height, width);
-for j=1:width
+x1 = (-b + sqrt(b.^2 - 4 * a .* c)) ./ (2 * a);
+x2 = (-b - sqrt(b.^2 - 4 * a .* c)) ./ (2 * a);
+
+mv = zeros(height, width, C2.Dtype);
+parfor j=1:width
     for i=1:height
-        if x1(i,j)<s1(i,j)
+        if x1(i,j) < s1(i,j)
             mv(i,j) = x1(i,j);
         else
-            if x2(i,j)<0
+            if x2(i,j) < 0
                 mv(i,j) = 0;
             else
                 mv(i,j) = x2(i,j);
@@ -44,58 +44,19 @@ for j=1:width
         end
     end
 end
-assert(class(mv)=="double");
-assert(all(mv>=0, 'all') && all(mv<=s1, "all"));
 
-ms = s1-mv;
-s2p = (s2-0.5*mv)./ms;
-s3p = s3./ms;
-s4p = s4./ms;
-alpha = 90*acos(s2p)/pi;
+ms = s1 - mv;
+if polTx == "H"
+    s2p = (s2 - 0.5 * mv) ./ ms;
+else
+    s2p = (s2 + 0.5 * mv) ./ ms;
+end
+s3p = s3 ./ ms;
+s4p = s4 ./ ms;
+
+alpha = acosd(-s2p) / 2;
 alpha(isnan(alpha)) = 0;
 alpha = real(alpha);
-delta =  180*angle(s3p+1i*s4p)/pi;
-
-end
-
-
-function [ms,mv,alpha,delta] = impl_V(C2)
-
-[height,width,~,~] = size(C2);
-s1 = squeeze(abs(C2(:,:,1,1))+abs(C2(:,:,2,2)));
-s2 = squeeze(abs(C2(:,:,1,1))-abs(C2(:,:,2,2)));
-s3 = squeeze(2*real(C2(:,:,1,2)));
-s4 = squeeze(2*imag(C2(:,:,1,2)));
-a = 0.75;
-b = -2*s1-0.5*s2;
-c = s1.^2-s2.^2-s3.^2-s4.^2;
-
-x1 = (-b+sqrt(b.^2-4*a.*c))./(2*a);
-x2 = (-b-sqrt(b.^2-4*a.*c))./(2*a);
-mv = zeros(height, width);
-for j=1:width
-    for i=1:height
-        if x1(i,j)<s1(i,j)
-            mv(i,j) = x1(i,j);
-        else
-            if x2(i,j)<0
-                mv(i,j) = 0;
-            else
-                mv(i,j) = x2(i,j);
-            end
-        end
-    end
-end
-assert(class(mv)=="double");
-assert(all(mv>=0, 'all') && all(mv<=s1, "all"));
-
-ms = s1-mv;
-s2p = (s2+0.5*mv)./ms;
-s3p = s3./ms;
-s4p = s4./ms;
-alpha = 90*acos(-s2p)/pi;
-alpha(isnan(alpha)) = 0;
-alpha = real(alpha);
-delta =  180*angle(s3p+1i*s4p)/pi;
+delta = rad2deg(angle(s3p + 1i * s4p));
 
 end

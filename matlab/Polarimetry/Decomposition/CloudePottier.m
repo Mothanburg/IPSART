@@ -1,13 +1,13 @@
 % Cloude-Pottier H/a/A decomposition
-function [H,alpha,A] = CloudePottier(M3)
+function [H,alpha,A] = CloudePottier(M3, options)
 
 arguments
     M3 PolM3
+    options.quiet logical = false
 end
 
-if ~isa(M3, "PolT3")
-    warning("The input data is not coherency matrix T, " + ...
-        "so the returned alpha and A may not make sense");
+if ~options.quiet && ~isa(M3, "PolT3")
+    warning("The input data is not the coherency matrix T, the returned alpha may not make sense");
 end
 
 global GARS_CONFIG
@@ -42,13 +42,27 @@ parfor j = 1:width
     for i = 1:height
         t = M3.Value.getMatAt(i, j);
         [v,d] = eig(t);
-        d = diag(abs(d))'
+        d = diag(abs(d))';
         p = d / sum(d);
-        H(i,j) = -sum(p .* log(p) / log(3));
+        H(i,j) = calc_entropy(p);
         alpha(i,j) = sum(p .* acosd(abs(v(1,:))));
         l3 = min(d);
         l2 = sum(d) - max(d) - l3;
         A(i,j) = (l2 - l3) / (l2 + l3);
+    end
+end
+
+end
+
+function h = calc_entropy(x)
+
+h = 0;
+len = numel(x);
+for i = 1:len
+    if x ~= 0
+        h = h - x(i) .* log(x(i)) / log(len);
+    else
+        h = h + 0;
     end
 end
 

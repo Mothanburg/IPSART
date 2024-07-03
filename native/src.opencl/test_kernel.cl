@@ -1,5 +1,5 @@
 __kernel void vec_add(__global const float *v1, __global const float *v2,
-                             __local float *shared_mem, __global float *result)
+                      __local float *shared_mem, __global float *result)
 {
     int wgid = get_group_id(0);
     int wgsize = get_local_size(0);

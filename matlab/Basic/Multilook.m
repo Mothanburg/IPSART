@@ -2,9 +2,9 @@
 function result = Multilook(image, rowLook, colLook)
 
 arguments
-    image (:,:) double
-    rowLook double
-    colLook double
+    image (:,:)
+    rowLook {mustBeInteger}
+    colLook {mustBeInteger}
 end
 
 sz = size(image);

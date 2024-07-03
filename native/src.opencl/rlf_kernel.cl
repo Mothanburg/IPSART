@@ -26,14 +26,16 @@ __kernel void filt_cij(__global const float *span, __global const float *cov_mat
 
     int local_row = get_local_id(0);
     int local_col = get_local_id(1);
+    int enqd_wg_height = get_enqueued_local_size(0);
+    int enqd_wg_width = get_enqueued_local_size(1);
     int wg_height = get_local_size(0);
     int wg_width = get_local_size(1);
     for (int r = local_row; r < shared_height; r += wg_height)
     {
         for (int c = local_col; c < shared_width; c += wg_width)
         {
-            int row = min(max(wg_row * wg_height + r - 3, 0), height - 1);
-            int col = min(max(wg_col * wg_width + c - 3, 0), width - 1);
+            int row = min(max(wg_row * enqd_wg_height + r - 3, 0), height - 1);
+            int col = min(max(wg_col * enqd_wg_width + c - 3, 0), width - 1);
             shared_mem[r * shared_width + c] = span[row * width + col];
         }
     }
@@ -151,8 +153,8 @@ __kernel void filt_cij(__global const float *span, __global const float *cov_mat
     {
         for (int c = local_col; c < shared_width; c += wg_width)
         {
-            int row = min(max(wg_row * wg_height + r - 3, 0), height - 1);
-            int col = min(max(wg_col * wg_width + c - 3, 0), width - 1);
+            int row = min(max(wg_row * enqd_wg_height + r - 3, 0), height - 1);
+            int col = min(max(wg_col * enqd_wg_width + c - 3, 0), width - 1);
             shared_mem[r * shared_width + c] = cov_mat_ij[row * width + col];
         }
     }

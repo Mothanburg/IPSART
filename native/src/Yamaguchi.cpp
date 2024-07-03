@@ -23,10 +23,10 @@ void Yamaguchi(long height, long width, const float *c11, const float *c22,
                const float *c23_r, const float *c12_i, const float *c13_i,
                const float *c23_i, float *outPs, float *outPd, float *outPv,
                float *outPh) {
-#pragma omp parallel for
-  for (int j = 0; j < width; j++) {
-    for (int i = 0; i < height; i++) {
-      int idx = j * width + i;
+  #pragma omp parallel for
+  for (int row = 0; row < height; row++) {
+    for (int col = 0; col < width; col++) {
+      int idx = row * width + col;
       Array33cf c;
       c(0, 0) = complexf(c11[idx], 0.0);
       c(0, 1) = complexf(c12_r[idx], c12_i[idx]);

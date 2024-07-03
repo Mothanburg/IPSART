@@ -3,6 +3,7 @@ classdef (Abstract) PolM2 < PolMat
     properties
         Height
         Width
+        Dim
         m11
         m12_r
         m12_i
@@ -17,6 +18,7 @@ classdef (Abstract) PolM2 < PolMat
     methods
 
         function obj = PolM2(m11, m22, m12_r, m12_i)
+            obj.Dim = 2;
             [obj.Height,obj.Width] = size(m11);
 
             obj.m11 = zeros(obj.Height, obj.Width, class(m11));
@@ -31,7 +33,7 @@ classdef (Abstract) PolM2 < PolMat
         end
 
         function value = get.SPAN(obj)
-            value = obj.m11 + obj.m22 + obj.m33;
+            value = obj.m11 + obj.m22;
         end
 
         function value = get.Dtype(obj)

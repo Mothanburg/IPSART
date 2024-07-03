@@ -20,10 +20,10 @@ void CloudePottier(long height, long width, const float *t11, const float *t22,
                    const float *t23_r, const float *t12_i, const float *t13_i,
                    const float *t23_i, float *outH, float *outAlpha,
                    float *outA) {
-#pragma omp parallel for
-  for (int i = 0; i < height; i++) {
-    for (int j = 0; j < width; j++) {
-      int idx = j * width + i;
+  #pragma omp parallel for
+  for (int row = 0; row < height; row++) {
+    for (int col = 0; col < width; col++) {
+      int idx = row * width + col;
       Eigen::Matrix3cf t;
       t(0, 0) = complexf(t11[idx], 0.0);
       t(0, 1) = complexf(t12_r[idx], t12_i[idx]);
@@ -39,7 +39,7 @@ void CloudePottier(long height, long width, const float *t11, const float *t22,
       const Eigen::Array3cf eig_vals = eig.eigenvalues().array();
       const Eigen::Matrix3cf eig_vecs = eig.eigenvectors();
 
-      const Eigen::Array3f p = eig_vals.real() / eig_vals.sum().real();
+      const Eigen::Array3f p = eig_vals.real() / eig_vals.sum().real() + 1.0e-40f;
       outH[idx] = -(p * p.log()).sum() / std::log(3.0f);
 
       const Eigen::Array3f alphas = eig_vecs.row(0).array().abs();

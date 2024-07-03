@@ -3,6 +3,7 @@ classdef (Abstract) PolM3 < PolMat
     properties
         Height
         Width
+        Dim
         m11
         m22
         m33
@@ -21,6 +22,7 @@ classdef (Abstract) PolM3 < PolMat
 
     methods
         function obj = PolM3(m11, m22, m33, m12_r, m13_r, m23_r, m12_i, m13_i, m23_i)
+            obj.Dim = 3;
             [obj.Height,obj.Width] = size(m11);
 
             obj.m11 = zeros(obj.Height, obj.Width, class(m11));

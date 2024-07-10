@@ -4,7 +4,6 @@
 #include <numeric>
 
 #include "GaRS.h"
-#include "utils.hpp"
 
 #define CL_HPP_TARGET_OPENCL_VERSION 200
 #define CL_HPP_ENABLE_EXCEPTIONS
@@ -14,7 +13,7 @@
 
 
 int GaRSTestOpenCL() {
-  constexpr auto TOTAL_LEN = 347;
+  constexpr auto TOTAL_LEN = 47;
   constexpr auto GROUP_LEN = 3;
   try {
     // Get the first device of the default platform

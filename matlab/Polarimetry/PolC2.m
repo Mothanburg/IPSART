@@ -31,16 +31,16 @@ classdef PolC2 < PolM2
             if obj.PolType ~= "HHVV"
                 error("Only ""HHVV"" is compitable with the T matrix.")
             end
-            C = zeros(obj.Height, obj.Width, 2, 2, obj.Dtype);
-            C(:,:,1,1) = obj.m11;
-            C(:,:,1,2) = obj.m12_r + 1i * obj.m12_i;
-            C(:,:,2,1) = conj(C(:,:,1,2));
-            C(:,:,2,2) = obj.m22;
+            C = zeros(2, 2, obj.Height, obj.Width, obj.Dtype);
+            C(1,1,:,:) = obj.m11;
+            C(1,2,:,:) = obj.m12_r + 1i * obj.m12_i;
+            C(2,1,:,:) = conj(C(1,2,:,:));
+            C(2,2,:,:) = obj.m22;
             M = [1, 1; 1, -1];
-            T = pagemtimes(pagemtimes(M, shiftdim(C, 2)), M');
-            T = shiftdim(T, 2);
+            T = pagemtimes(pagemtimes(M, C), M');
 
-            T2 = PolT2(T(:,:,1,1), T(:,:,2,2), real(T(:,:,1,2)), imag(T(:,:,1,2)));
+            T2 = PolT2(squeeze(T(1,1,:,:)), squeeze(T(2,2,:,:)), ...
+                real(squeeze(T(1,2,:,:))), imag(squeeze(T(1,2,:,:))));
         end
 
     end

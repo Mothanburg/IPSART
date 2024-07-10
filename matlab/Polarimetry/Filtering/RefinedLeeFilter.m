@@ -1,41 +1,55 @@
-function result = RefinedLeeFilter(M3, nLooks)
+function result = RefinedLeeFilter(M, nLook)
 
 arguments
-    M3 PolM3
-    nLooks {mustBeGreaterThanOrEqual(nLooks, 1)}
+    M PolMat
+    nLook {mustBeGreaterThanOrEqual(nLook, 1)}
 end
 
 global GARS_CONFIG
 
-fallback_flag = false;
 if GARS_CONFIG.CAPABILITY >= 1
     try
-        [errno, m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i] = ...
-            clib.gars.RefinedLeeFilter(nLooks, M3.m11, M3.m22, M3.m33, M3.m12_r, M3.m13_r, ...
-            M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
-        if errno ~= 0
-            error("error number %d is returned.", errno);
+        if isa(M, "PolM3")
+            [errno, m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i] = ...
+                clib.gars.RefinedLeeFilter3x3(nLook, M.m11, M.m22, M.m33, M.m12_r, M.m13_r, ...
+                M.m23_r, M.m12_i, M.m13_i, M.m23_i);
+            if errno ~= 0
+                error("error number %d is returned.", errno);
+            end
+
+            if isa(M, "PolC3")
+                result = PolC3(m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i);
+            elseif isa(M, "PolT3")
+                result = PolT3(m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i);
+            end
+
+            return;
+        elseif isa(M, "PolM2")
+            [errno, m11, m22, m12r, m12i] = ...
+                clib.gars.RefinedLeeFilter2x2(nLook, M.m11, M.m22, M.m12_r, M.m12_i);
+            if errno ~= 0
+                error("error number %d is returned.", errno);
+            end
+
+            if isa(M, "PolC2")
+                result = PolC2(m11, m22, m12r, m12i, M.PolType);
+            elseif isa(M, "PolT2")
+                result = PolT2(m11, m22, m12r, m12i);
+            end
+
+            return;
         end
     catch e
         warning(e.identifier, "An error occurred when calling library, fallback to matlab.\n" + ...
-            "    Error message: %s", e.message);
-        fallback_flag = true;
+            "        Error message: %s", e.message);
     end
 end
 
-if fallback_flag
-    [m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i] = RLF_matlab(M3, nLooks);
-end
-
-if isa(M3, "PolC3")
-    result = PolC3(m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i);
-else
-    result = PolT3(m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i);
-end
+result = RLF_matlab(M, nLook);
 
 end
 
-function [m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i] = RLF_matlab(M3, nLook)
+function result = RLF_matlab(M, nLook)
 
 w1 = [-1,0,1;-1,0,1;-1,0,1];
 w2 = [0,1,1;-1,0,1;-1,-1,0];
@@ -59,24 +73,17 @@ pw7 = flip(pw3, 1);
 pw8 = flip(pw2, 1);
 PW = parallel.pool.Constant({pw1, pw2, pw3, pw4, pw5, pw6, pw7, pw8});
 
-height = M3.Height;
-width = M3.Width;
+height = M.Height;
+width = M.Width;
 
-m11 = zeros(height, width, M3.Dtype);
-m22 = zeros(height, width, M3.Dtype);
-m33 = zeros(height, width, M3.Dtype);
-m12r = zeros(height, width, M3.Dtype);
-m13r = zeros(height, width, M3.Dtype);
-m23r = zeros(height, width, M3.Dtype);
-m12i = zeros(height, width, M3.Dtype);
-m13i = zeros(height, width, M3.Dtype);
-m23i = zeros(height, width, M3.Dtype);
+pw_id = zeros(height, width, "int32");
+b = zeros(height, width, M.Dtype);
 
-span = parallel.pool.Constant(M3.SPAN);
-M3 = parallel.pool.Constant(M3);
+span = parallel.pool.Constant(M.SPAN);
+M = parallel.pool.Constant(M);
 parfor col = 1:width
     for row = 1:height
-        window = zeros(7, 7, M3.Value.Dtype);
+        window = zeros(7, 7, M.Value.Dtype);
         for i = 1:7
             for j = 1:7
                 r = min(max(row - 3 + i, 1), height);
@@ -85,46 +92,71 @@ parfor col = 1:width
             end
         end
 
-        meanmat = zeros(3, 3, M3.Value.Dtype);
+        meanmat = zeros(3, 3, M.Value.Dtype);
         for i = 1:3
             for j = 1:3
                 meanmat(i,j) = mean(window((1:3) + 2 * (i - 1),(1:3) + 2 * (j - 1)), "all");
             end
         end
         [~,wid] = max(sum(meanmat .* W.Value, [1 2]));
-        pw = PW.Value{wid};
+        pw_id(row,col) = wid;
 
-        % 计算b参数
+        pw = PW.Value{wid};
         z = window .* pw;
         z_mean = sum(z, "all") / 28;
         var_v = 1 / nLook;
         var_z = sum((z - z_mean).^2, "all") / 28;
         var_x = (var_z - (z_mean^2) * var_v) / (1 + var_v);
-        b = (var_x + 1e-30) / (var_z + 1e-30);
+        b(row,col) = (var_x + 1e-30) / (var_z + 1e-30);
+    end
+end
 
-        % 滤波
-        m_mean = zeros(3, 3, M3.Value.Dtype);
+result = M.Value.fmapPage(UnaryOp(@rlf_filt, 1, pw_id, b));
+
+end
+
+function out = rlf_filt(cij, pwId, b)
+
+pw1 = repmat([0,0,0,1,1,1,1], [7,1]);
+pw2 = [1,1,1,1,1,1,1;
+    0,1,1,1,1,1,1;
+    0,0,1,1,1,1,1;
+    0,0,0,1,1,1,1;
+    0,0,0,0,1,1,1;
+    0,0,0,0,0,1,1;
+    0,0,0,0,0,0,1];
+pw3 = repmat([1,1,1,1,0,0,0]', [1,7]);
+pw4 = flip(pw2, 2);
+pw5 = flip(pw1, 2);
+pw6 = flip(pw4, 1);
+pw7 = flip(pw3, 1);
+pw8 = flip(pw2, 1);
+PW = parallel.pool.Constant({pw1, pw2, pw3, pw4, pw5, pw6, pw7, pw8});
+
+[height,width] = size(cij);
+out = zeros(height, width, class(cij));
+
+cij = parallel.pool.Constant(cij);
+b = parallel.pool.Constant(b);
+parfor col = 1:width
+    for row = 1:height
+        pw = PW.Value{pwId};
+
+        m_mean = cast(0, "like", cij.Value);
         for i = 1:7
             for j = 1:7
                 r = min(max(row - 3 + i, 1), height);
                 c = min(max(col - 3 + j, 1), width);
-                m_mean = m_mean + M3.Value.getMatAt(r, c) * pw(i, j);
+                m_mean = m_mean + cij.Value(r, c) * pw(i, j);
             end
         end
         m_mean = m_mean / 28;
-        m_out = m_mean + b * (M3.Value.getMatAt(row, col) - m_mean);
+        m_out = m_mean + b.Value(row, col) * (cij.Value(row, col) - m_mean);
 
-        m11(row, col) = real(m_out(1, 1));
-        m22(row, col) = real(m_out(2, 2));
-        m33(row, col) = real(m_out(3, 3));
-        m12r(row, col) = real(m_out(1, 2));
-        m13r(row, col) = real(m_out(1, 3));
-        m23r(row, col) = real(m_out(2, 3));
-        m12i(row, col) = imag(m_out(1, 2));
-        m13i(row, col) = imag(m_out(1, 3));
-        m23i(row, col) = imag(m_out(2, 3));
+        out(row, col) = m_out;
     end
 end
+
 
 end
 

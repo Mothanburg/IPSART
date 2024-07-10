@@ -47,7 +47,7 @@ function _is_shared_lib(target, libpath)
 end
 
 function _gen_matlab_interface_generator(target, installdir)
-    local file = io.open("autogen_publishMatlabInterface.m", "w")
+    local file = io.open(path.join(config:buildir(), "publishMatlabInterface.m"), "w")
     if file then
         local header_file = path.join(os.projectdir(), "include", "GaRS.h")
         local tgt_file = path.join(os.projectdir(), target:targetfile())

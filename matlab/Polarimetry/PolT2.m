@@ -15,17 +15,16 @@ classdef PolT2 < PolM2
     methods
 
         function C2 = toC2(obj)
-            T = zeros(obj.Height, obj.Width, 2, 2, obj.Dtype);
-            T(:,:,1,1) = obj.m11;
-            T(:,:,1,2) = obj.m12_r + 1i * obj.m12_i;
-            T(:,:,2,1) = conj(T(:,:,1,2));
-            T(:,:,2,2) = obj.m22;
+            T = zeros(2, 2, obj.Height, obj.Width, obj.Dtype);
+            T(1,1,:,:) = obj.m11;
+            T(1,2,:,:) = obj.m12_r + 1i * obj.m12_i;
+            T(2,1,:,:) = conj(T(1,2,:,:));
+            T(2,2,:,:) = obj.m22;
             M = [1, 1; 1, -1]';
-            C = pagemtimes(pagemtimes(M, shiftdim(T, 2)), M');
-            C = shiftdim(C, 2);
+            C = pagemtimes(pagemtimes(M, T), M');
 
-            C2 = PolC2(C(:,:,1,1), C(:,:,2,2), real(C(:,:,1,2)), ...
-                imag(C(:,:,1,2)), "HHVV");
+            C2 = PolC2(squeeze(C(1,1,:,:)), squeeze(C(2,2,:,:)), real(squeeze(C(1,2,:,:))), ...
+                imag(squeeze(C(1,2,:,:))), "HHVV");
         end
 
     end

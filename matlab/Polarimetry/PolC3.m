@@ -20,24 +20,23 @@ classdef PolC3 < PolM3
     methods
 
         function T3 = toT3(obj)
-            C = zeros(obj.Height, obj.Width, 3, 3, obj.Dtype);
-            C(:,:,1,1) = obj.m11;
-            C(:,:,1,2) = obj.m12_r + 1i * obj.m12_i;
-            C(:,:,1,3) = obj.m13_r + 1i * obj.m13_i;
-            C(:,:,2,1) = conj(C(:,:,1,2));
-            C(:,:,2,2) = obj.m22;
-            C(:,:,2,3) = obj.m23_r + 1i * obj.m23_i;
-            C(:,:,3,1) = conj(C(:,:,1,3));
-            C(:,:,3,2) = conj(C(:,:,2,3));
-            C(:,:,3,3) = obj.m33;
+            C = zeros(3, 3, obj.Height, obj.Width, obj.Dtype);
+            C(1,1,:,:) = obj.m11;
+            C(1,2,:,:) = obj.m12_r + 1i * obj.m12_i;
+            C(1,3,:,:) = obj.m13_r + 1i * obj.m13_i;
+            C(2,1,:,:) = conj(C(1,2,:,:));
+            C(2,2,:,:) = obj.m22;
+            C(2,3,:,:) = obj.m23_r + 1i * obj.m23_i;
+            C(3,1,:,:) = conj(C(1,3,:,:));
+            C(3,2,:,:) = conj(C(2,3,:,:));
+            C(3,3,:,:) = obj.m33;
 
             M = [1 0 1; 1 0 -1; 0 sqrt(2) 0] / sqrt(2);
-            T = pagemtimes(pagemtimes(M, shiftdim(C, 2)), M');
-            T = shiftdim(T, 2);
+            T = pagemtimes(pagemtimes(M, C), M');
 
-            T3 = PolT3(T(:,:,1,1), T(:,:,2,2), T(:,:,3,3), real(T(:,:,1,2)), ...
-                real(T(:,:,1,3)), real(T(:,:,2,3)), imag(T(:,:,1,2)), ...
-                imag(T(:,:,1,3)), imag(T(:,:,2,3)));
+            T3 = PolT3(squeeze(T(1,1,:,:)), squeeze(T(2,2,:,:)), squeeze(T(3,3,:,:)), ...
+                real(squeeze(T(1,2,:,:))), real(squeeze(T(1,3,:,:))), real(squeeze(T(2,3,:,:))), ...
+                imag(squeeze(T(1,2,:,:))), imag(squeeze(T(1,3,:,:))), imag(squeeze(T(2,3,:,:))));
         end
 
     end

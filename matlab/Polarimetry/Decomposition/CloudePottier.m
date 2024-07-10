@@ -14,12 +14,12 @@ global GARS_CONFIG
 
 if GARS_CONFIG.CAPABILITY > 0
     try
-        [H,alpha,A] = clib.gars.CloudePottier(M3.m11, M3.m22, M3.m33, M3.m12_r, ...
+        [H,alpha,A] = clib.ga9rs.CloudePottier(M3.m11, M3.m22, M3.m33, M3.m12_r, ...
             M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
         return
     catch e
         warning(e.identifier, "An error occurred when calling library, fallback to matlab.\n" + ...
-            "    Error message: %s", e.message);
+            "        Error message: %s", e.message);
     end
 end
 
@@ -60,9 +60,7 @@ h = 0;
 len = numel(x);
 for i = 1:len
     if x ~= 0
-        h = h - x(i) .* log(x(i)) / log(len);
-    else
-        h = h + 0;
+        h = h - x(i) * log(x(i)) / log(len);
     end
 end
 

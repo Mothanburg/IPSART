@@ -4,7 +4,6 @@
 #include <cmath>
 #include <type_traits>
 
-
 template <typename IntTy>
   requires std::is_integral_v<IntTy>
 inline IntTy int_sqrt(IntTy x) {

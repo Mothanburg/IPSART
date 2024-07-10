@@ -1,4 +1,4 @@
-function wrapped = AsUnary(func, position, vargin)
+function unary = UnaryOp(func, position, vargin)
 
 arguments
     func function_handle
@@ -9,6 +9,6 @@ arguments (Repeating)
     vargin
 end
 
-wrapped = @(x) func(vargin{1:(position - 1)}, x, vargin{position:end});
+unary = @(x) func(vargin{1:(position - 1)}, x, vargin{position:end});
 
 end

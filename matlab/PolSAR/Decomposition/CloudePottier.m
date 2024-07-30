@@ -14,7 +14,7 @@ global GARS_CONFIG
 
 if GARS_CONFIG.CAPABILITY > 0
     try
-        [H,alpha,A] = clib.ga9rs.CloudePottier(M3.m11, M3.m22, M3.m33, M3.m12_r, ...
+        [H,alpha,A] = clib.gar0s.CloudePottier(M3.m11, M3.m22, M3.m33, M3.m12_r, ...
             M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
         return
     catch e
@@ -40,7 +40,7 @@ A = zeros(height, width, M3.Dtype);
 M3 = parallel.pool.Constant(M3);
 parfor j = 1:width
     for i = 1:height
-        t = M3.Value.getMatAt(i, j);
+        t = M3.Value.MatAt(i, j);
         [v,d] = eig(t);
         d = diag(abs(d))';
         p = d / sum(d);

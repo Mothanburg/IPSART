@@ -34,7 +34,7 @@ Ph = zeros(height, width, C3.Dtype);
 C3 = parallel.pool.Constant(C3);
 parfor j = 1:width
     for i = 1:height
-        c = C3.Value.getMatAt(i, j);
+        c = C3.Value.MatAt(i, j);
 
         % 计算螺旋体方向
         if imag(c(1,2) + c(2,3)) > 0

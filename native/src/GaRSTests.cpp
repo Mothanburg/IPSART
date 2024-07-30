@@ -7,10 +7,9 @@
 
 #define CL_HPP_TARGET_OPENCL_VERSION 200
 #define CL_HPP_ENABLE_EXCEPTIONS
-#include <cl/opencl.hpp>
+#include <CL/opencl.hpp>
 
 #include "test_kernel.src.h"
-
 
 int GaRSTestOpenCL() {
   constexpr auto TOTAL_LEN = 47;
@@ -18,7 +17,7 @@ int GaRSTestOpenCL() {
   try {
     // Get the first device of the default platform
     cl::Context context = cl::Context::getDefault();
-    auto device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
+    cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
     cl::CommandQueue queue(context);
 
     // Compile the program
@@ -26,7 +25,7 @@ int GaRSTestOpenCL() {
     program.build(device, "-cl-std=CL2.0");
 
     // Set data
-    std::array<float, TOTAL_LEN> v1, v2;
+    std::array<float, TOTAL_LEN> v1{}, v2{};
     v1.fill(1.0f);
     v2.fill(-1.0f);
 

@@ -10,6 +10,9 @@ target("GaRS")
     add_files("src/*.cpp")
     add_packages("eigen", "openblas", "openmp", "opencl")
     add_defines("COMPILING_GARS")
+    if is_mode("release") then
+        add_defines("EIGEN_NO_DEBUG")
+    end
     on_config("on_config")
     on_install("install")
 

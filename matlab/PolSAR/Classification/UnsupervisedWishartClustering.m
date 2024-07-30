@@ -89,7 +89,7 @@ while transfer_rate > threshold && iters <= maxIter
     iter_output = zeros(height, width, "int32");
     parfor idx = 1:len
         [i,j] = ind2sub([height, width], idx);
-        c = C.Value.getMatAt(i, j);
+        c = C.Value.MatAt(i, j);
         distances = calc_distances(c, vms);
         [~,new_class] = min(distances);
         iter_output(idx) = new_class;
@@ -111,7 +111,7 @@ vms = cell(1, num_classes);
 C_full = zeros(C.Height, C.Width, C.Dim, C.Dim, C.Dtype);
 for i = 1:C.Dim
     for j = 1:C.Dim
-        C_full(:,:,i,j) = C.getPageAt(i, j);
+        C_full(:,:,i,j) = C.PageAt(i, j);
     end
 end
 

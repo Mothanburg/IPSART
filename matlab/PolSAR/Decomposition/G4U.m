@@ -4,6 +4,29 @@ arguments
     T3 PolT3
 end
 
+global GARS_CONFIG
+
+if GARS_CONFIG.CAPABILITY > 0
+    try
+        [errno,Ps,Pd,Pv,Ph] = clib.gars.G4U(T3.m11, T3.m22, T3.m33, T3.m12_r, T3.m13_r, ...
+            T3.m23_r, T3.m12_i, T3.m13_i, T3.m23_i);
+        if errno ~= 0
+            error("Unkown error ocurred.");
+        end
+        return
+    catch e
+        warning(e.identifier, "An error occurred when calling library, fallback to matlab.\n" + ...
+            "        Error message: %s", e.message);
+    end
+end
+
+[Ps,Pd,Pv,Ph] = G4U_matlab(T3);
+
+end
+
+
+function [Ps,Pd,Pv,Ph] = G4U_matlab(T3)
+
 height = T3.Height;
 width = T3.Width;
 
@@ -15,7 +38,7 @@ Ph = zeros(height, width, T3.Dtype);
 T3 = parallel.pool.Constant(T3);
 parfor j = 1:width
     for i = 1:height
-        t0 = T3.Value.getMatAt(i, j);
+        t0 = T3.Value.MatAt(i, j);
         two_theta = atan(2 * real(t0(2,3)) / real(t0(2,2) - t0(3,3))) / 2;
         if isnan(two_theta)
             r = eye(3);
@@ -41,8 +64,6 @@ parfor j = 1:width
                     fh = 0;
                     fv = 15 * (2 * t33 - fh) / 8;
                 end
-                s = t11 - fv / 2;
-                d = tp - fv - fh - s;
                 c = t12 + t13 - fv / 6;
             elseif co_ratio > -2 && co_ratio < 2
                 fv = 2 * (2 * t33 - fh);
@@ -50,8 +71,6 @@ parfor j = 1:width
                     fh = 0;
                     fv = 2 * (2 * t33 - fh);
                 end
-                s = t11 - fv / 2;
-                d = tp - fv - fh - s;
                 c = t12 + t13;
             else
                 fv = 15 * (2 * t33 - fh) / 8;
@@ -59,12 +78,13 @@ parfor j = 1:width
                     fh = 0;
                     fv = 15 * (2 * t33 - fh) / 8;
                 end
-                s = t11 - fv / 2;
-                d = tp - fv - fh - s;
                 c = t12 + t13 + fv / 6;
             end
 
-            if fv + fh > tp
+            s = t11 - fv / 2;
+            d = tp - fv - fh - s;
+
+            if fv + fh >= tp
                 Ps(i,j) = 0;
                 Pd(i,j) = 0;
                 Ph(i,j) = fh;
@@ -93,26 +113,27 @@ parfor j = 1:width
             fd = d + abs(c)^2 / d;
         end
 
-        if fs > 0 && fd > 0
+        if fs >= 0 && fd >= 0
             Ps(i,j) = fs;
             Pd(i,j) = fd;
             Ph(i,j) = fh;
             Pv(i,j) = fv;
-        elseif fs > 0 && fd < 0
+        elseif fs >= 0 && fd < 0
             Ps(i,j) = tp - fv - fh;
             Pd(i,j) = 0;
             Ph(i,j) = fh;
             Pv(i,j) = fv;
-        elseif fs < 0 && fd > 0
+        elseif fs < 0 && fd >= 0
             Ps(i,j) = 0;
             Pd(i,j) = tp - fh - fv;
             Ph(i,j) = fh;
             Pv(i,j) = fv;
         else
-            error("未知错误");
+            error("Unkown error ocurred, at position (%d,%d).", i, j);
         end
 
     end
 end
 
 end
+

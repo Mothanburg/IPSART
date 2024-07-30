@@ -1,5 +1,5 @@
 % 均值滤波，不改变图像尺寸的多视处理
-function result = AverageFilter(image, rowLook, colLook)
+function result = AverageFilting(image, rowLook, colLook)
 
 arguments
     image (:,:) double

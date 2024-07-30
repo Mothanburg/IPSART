@@ -12,9 +12,9 @@ classdef (Abstract) PolMat
     end
 
     methods (Abstract)
-        mat = getMatAt(obj, row, col)
-        page = getPageAt(obj, x, y)
-        outObj = fmapPage(obj, func)
+        mat = MatAt(obj, row, col)
+        page = PageAt(obj, x, y)
+        outObj = MapPage(obj, func)
     end
 
 end

@@ -27,36 +27,52 @@ GARS_API int GaRSTestOpenCL();
  * GaRS library algorithms
  */
 
-// 7x7 RefinedLeeFilter by OpenCL
+// 7x7 Refined Lee Filter by OpenCL
 GARS_API int RefinedLeeFilter3x3(
-    long nLooks, long height, long width, const float *c11, const float *c22,
-    const float *c33, const float *c12_r, const float *c13_r,
-    const float *c23_r, const float *c12_i, const float *c13_i,
-    const float *c23_i, float *outC11, float *outC22, float *outC33,
-    float *outC12_r, float *outC13_r, float *outC23_r, float *outC12_i,
-    float *outC13_i, float *outC23_i);
+    int nLooks, int height, int width, const float *c11, const float *c22,
+    const float *c33, const float *c12r, const float *c13r, const float *c23r,
+    const float *c12i, const float *c13i, const float *c23i, float *outC11,
+    float *outC22, float *outC33, float *outC12r, float *outC13r,
+    float *outC23r, float *outC12i, float *outC13i, float *outC23i);
 
-GARS_API int RefinedLeeFilter2x2(long nLooks, long height, long width,
+// Refined Lee Filter for 2x2 Covariance matrix
+GARS_API int RefinedLeeFilter2x2(int nLooks, int height, int width,
                                  const float *c11, const float *c22,
-                                 const float *c12_r, const float *c12_i,
-                                 float *outC11, float *outC22, float *outC12_r,
-                                 float *outC12_i);
+                                 const float *c12r, const float *c12i,
+                                 float *outC11, float *outC22, float *outC12r,
+                                 float *outC12i);
+
+// Multilook
+GARS_API int Multilook(int height, int width, const float *image, int rowLook,
+                       int colLook, int outHeight, int outWidth, float *looked);
 
 // Cloude-Pottier H/a/A decomposition
-GARS_API void CloudePottier(long height, long width, const float *t11,
+GARS_API void CloudePottier(int height, int width, const float *t11,
                             const float *t22, const float *t33,
-                            const float *t12_r, const float *t13_r,
-                            const float *t23_r, const float *t12_i,
-                            const float *t13_i, const float *t23_i, float *outH,
+                            const float *t12r, const float *t13r,
+                            const float *t23r, const float *t12i,
+                            const float *t13i, const float *t23i, float *outH,
                             float *outAlpha, float *outA);
 
+// Cloude-Pottier H/a/A decomposition for dual-pol
+GARS_API void CloudePottierDP(int height, int width, const float *c11,
+                              const float *c22, const float *c12r,
+                              const float *c12i, float *outH, float *outAlpha,
+                              float *outA);
+
 // Yamaguchi four component decomposition
-GARS_API void Yamaguchi(long height, long width, const float *c11,
-                        const float *c22, const float *c33, const float *c12_r,
-                        const float *c13_r, const float *c23_r,
-                        const float *c12_i, const float *c13_i,
-                        const float *c23_i, float *outPs, float *outPd,
-                        float *outPv, float *outPh);
+GARS_API void Yamaguchi(int height, int width, const float *c11,
+                        const float *c22, const float *c33, const float *c12r,
+                        const float *c13r, const float *c23r, const float *c12i,
+                        const float *c13i, const float *c23i, float *outPs,
+                        float *outPd, float *outPv, float *outPh);
+
+// General four component decomposition with unitary transformation T
+GARS_API int G4U(int height, int width, const float *t11, const float *t22,
+                 const float *t33, const float *t12r, const float *t13r,
+                 const float *t23r, const float *t12i, const float *t13i,
+                 const float *t23i, float *outPs, float *outPd, float *outPv,
+                 float *outPh);
 
 #ifdef __cplusplus
 }

@@ -12,7 +12,7 @@ end
 file_path = strcat(prefix, dataName, fileExt);
 header_path = strcat(prefix, dataName, ".hdr");
 if ~exist(header_path, "file") || ~exist(file_path, "file")
-    error("ReadRSData:cannotFindFile", "找不到数据文件或其头文件");
+    error("Cannot find data or its .hdr file");
 end
 
 header = fn_parse_envi_header(header_path);
@@ -55,94 +55,122 @@ end
 % 解析ENVI头文件，允许加入自定义属性
 % 语法要求：属性名 + <任意数量空格/制表符> + "="符号 + <任意数量空格/制表符> + 属性值 + 换行符
 % 属性名要求：全字母，单词间仅允许单个空格，解析后空格会被替换为"_"
-% 属性值要求：一般属性不允许包含"="、"；"，且必须在单行内写完；如要包含特殊字符或换行，请用"{}"将属性值括起来
+% 属性值要求：一般属性不允许包含"="、";"，且必须在单行内写完；如要包含特殊字符或换行，请用"{}"将属性值括起来
 % TODO：完整支持标准ENVI头文件
 function headerInfo = fn_parse_envi_header(headerfile)
 
 lines = readlines(headerfile, "WhitespaceRule", "trim", "EmptyLineRule", "skip");
-assert(strcmp(lines(1), "ENVI"), "ReadRSData:invalidHeaderFormat", "头文件第一行必须是'ENVI'");
-
-raw_text = char(join(lines(2:end), ';') + ';');
+assert(strcmp(lines(1), "ENVI"), "The first line of .hdr file must be 'ENVI'");
 
 headerInfo = struct();
 
-% 状态机
-% 0：初始状态
-% 1：解析属性名状态
-% 2：解析属性值状态
-state = 0;
-i = 1;
+n_line = 2;
 while true
+    line = char(lines(n_line));
 
-    switch state
-        case 0
-            assert(isletter(raw_text(i)), "ReadRSData:invalidPropertyName", "属性名开头必须是字母");
-            state = 1;
-
-        case 1  % 解析属性名
-            property_name = '';
-            while true
-                if isletter(raw_text(i))
-                    property_name = [property_name raw_text(i)];
-                    i = i + 1;
-                elseif raw_text(i) == ' ' && isletter(raw_text(i + 1))
-                    property_name = [property_name '_' raw_text(i + 1)];
-                    i = i + 2;
-                else
-                    break;
-                end
-            end
-
-            % 跳过属性名后的空白
-            while isspace(raw_text(i))
-                i = i + 1;
-            end
-
-            assert(raw_text(i) == '=', "ReadRSData:headerSyntaxError", "属性名后同一行内的下一个token必须是'='符号")
-            i = i + 1;
-
-            % 跳过Value前的空白
-            while isspace(raw_text(i))
-                i = i + 1;
-            end
-
-            state = 2;
-
-        case 2  % 解析属性值
-            value_string = '';
-            % 暂时不解析用"{ }"包含的内容，直接将这些内容转换为字符串
-            if raw_text(i) == '{'
-                i = i + 1;
-                while raw_text(i) ~= '}'
-                    if raw_text(i) == ';'
-                        value_string = [value_string '\n'];
-                    else
-                        value_string = [value_string raw_text(i)];
-                    end
-                    i = i + 1;
-                end
-                i = i + 1;
-                headerInfo.(property_name) = value_string;
-                % 解析普通的属性值
-            else
-                while raw_text(i) ~= ';'
-                    value_string = [value_string raw_text(i)];
-                    i = i + 1;
-                end
-
-                value = fn_lookup_valuetype(property_name, value_string);
-                headerInfo.(property_name) = value;
-            end
-
-            if i == length(raw_text)
-                break;
-            else
-                i = i + 1;
-                state = 1;
-            end
+    % Parse property name
+    [token,n_char] = get_next_token(line, 1);
+    if token.type ~= "WORD"
+        error("The property name must start with a letter.");
     end
 
+    property_name = token.value;
+    while true
+        [token,n_char] = get_next_token(line, n_char);
+        if token.type ~= "WORD"
+            break
+        end
+        property_name = property_name + "_" + token.value;
+    end
+   
+    % Next token must be 'ASSIGN'
+    if token.type ~= "ASSIGN"
+        error("Missing '=' in line %d.", n_line);
+    end
+
+    % Parse property value
+    [token,n_char] = get_next_token(line, n_char);
+    if token.type == "VALUE" || token.type == "WORD"
+        property_value = token.value;
+        while true
+            [token,n_char] = get_next_token(line, n_char);
+            if token.type == "NULL"
+                break
+            end
+            property_value = property_value + " " + token.value;
+        end
+    elseif token.type == "L_BRACE"
+        if line(end) == '}'
+            content = line(n_char:end-1);
+        else
+            content = line(n_char:end);
+            n_line = n_line + 1;
+
+            while n_line <= length(lines) && ~endsWith(lines(n_line), "}")
+                content = ['\n' content char(lines(n_line))];
+                n_line = n_line + 1;
+            end
+
+            if n_line > length(lines)
+                error("Unclosed '}' in .hdr file");
+            end
+
+            content = [content char(lines(n_line))];
+        end
+        property_value = string(content(1:end-1));
+    else
+        error("Invalid property value in line %d.", n_line);
+    end
+
+    headerInfo.(property_name) = fn_lookup_valuetype(property_name, property_value);
+    n_line = n_line + 1;
+    if n_line > length(lines)
+        break
+    end
 end
+
+
+end
+
+function [token,ptr] = get_next_token(text, start_ptr)
+
+idx = start_ptr;
+while idx <= length(text) && isspace(text(idx))
+    idx = idx + 1;
+end
+
+% valid type: NULL (no more token) WORD (starts with letter), ASSIGN ('='), L_BRACE ('{'), 
+% VALUE (any non-space ascii character)
+
+if idx > length(text)
+    token.type = "NULL";
+    ptr = idx;
+elseif text(idx) == '='
+    token.type = "ASSIGN";
+    ptr = idx + 1;
+elseif text(idx) == '{'
+    token.type = "L_BRACE";
+    ptr = idx + 1;
+elseif isletter(text(idx))
+    content = '';
+    while idx <= length(text) && ~isspace(text(idx))
+        content = [content text(idx)];
+        idx = idx + 1;
+    end
+    token.type = "WORD";
+    token.value = string(content);
+    ptr = idx;
+else
+    content = '';
+    while idx <= length(text) && ~isspace(text(idx))
+        content = [content text(idx)];
+        idx = idx + 1;
+    end
+    token.type = "VALUE";
+    token.value = string(content);
+    ptr = idx;
+end
+
 
 end
 

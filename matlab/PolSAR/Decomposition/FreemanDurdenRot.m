@@ -7,8 +7,8 @@ end
 height = T3.Height;
 width = T3.Width;
 
-B = (T3.getPageAt(2, 2) - T3.getPageAt(3, 3)) / 2;
-E = real(T3.getPageAt(2, 3) + T3.getPageAt(3, 2)) / 2;
+B = (T3.m22 - T3.m33) / 2;
+E = T3.m23_r; % real(T3.PageAt(2, 3) + T3.PageAt(3, 2)) / 2;
 cos4t = B ./ sqrt(B.^2 + E.^2);
 sin4t = E ./ sqrt(B.^2 + E.^2);
 cos2t = sqrt((1 + cos4t) / 2);
@@ -22,7 +22,7 @@ T3 = parallel.pool.Constant(T3);
 parfor j = 1:width
     for i = 1:height
         q = [1 0 0; 0 cos2t(i,j) sin2t(i,j); 0 -sin2t(i,j) cos2t(i,j)];
-        t = T3.Value(:,:,i,j);
+        t = T3.Value.MatAt(i, j);
         t1 = q * t * q';
         if t1(1,1) <= t1(3,3)
             Pv(i,j) = real(3 * t1(1,1));
@@ -33,7 +33,7 @@ parfor j = 1:width
             x11 = real(t1(1,1) - t1(3,3));
             x22 = real(t1(2,2) - t1(3,3));
             if abs(t1(1,2))^2 > x11 * x22
-                if x11>x22
+                if x11 > x22
                     Ps(i,j) = x11 + x22;
                     Pd(i,j) = 0;
                 else

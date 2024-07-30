@@ -1,4 +1,6 @@
+#ifdef _MSC_VER
 #define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
+#endif
 
 #include <array>
 
@@ -7,7 +9,7 @@
 
 #define CL_HPP_TARGET_OPENCL_VERSION 200
 #define CL_HPP_ENABLE_EXCEPTIONS
-#include <cl/opencl.hpp>
+#include <CL/opencl.hpp>
 
 #include "rlf_kernel.src.h"
 
@@ -84,17 +86,16 @@ constexpr array<float, 7ull * 7 * 8> Prewitt{
 };
 // clang-format on
 
-int RefinedLeeFilter3x3(long nLooks, long height, long width, const float *c11,
-                        const float *c22, const float *c33, const float *c12_r,
-                        const float *c13_r, const float *c23_r,
-                        const float *c12_i, const float *c13_i,
-                        const float *c23_i, float *outC11, float *outC22,
-                        float *outC33, float *outC12_r, float *outC13_r,
-                        float *outC23_r, float *outC12_i, float *outC13_i,
-                        float *outC23_i) {
+int RefinedLeeFilter3x3(int nLooks, int height, int width, const float *c11,
+                        const float *c22, const float *c33, const float *c12r,
+                        const float *c13r, const float *c23r, const float *c12i,
+                        const float *c13i, const float *c23i, float *outC11,
+                        float *outC22, float *outC33, float *outC12r,
+                        float *outC13r, float *outC23r, float *outC12i,
+                        float *outC13i, float *outC23i) {
   try {
     cl::Context context = cl::Context::getDefault();
-    auto device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
+    cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
     cl::CommandQueue queue(context);
 
     // Compile the program
@@ -113,12 +114,12 @@ int RefinedLeeFilter3x3(long nLooks, long height, long width, const float *c11,
     cl::Buffer buf_c11(context, c11, c11 + total_len, true);
     cl::Buffer buf_c22(context, c22, c22 + total_len, true);
     cl::Buffer buf_c33(context, c33, c33 + total_len, true);
-    cl::Buffer buf_c12r(context, c12_r, c12_r + total_len, true);
-    cl::Buffer buf_c13r(context, c13_r, c13_r + total_len, true);
-    cl::Buffer buf_c23r(context, c23_r, c23_r + total_len, true);
-    cl::Buffer buf_c12i(context, c12_i, c12_i + total_len, true);
-    cl::Buffer buf_c13i(context, c13_i, c13_i + total_len, true);
-    cl::Buffer buf_c23i(context, c23_i, c23_i + total_len, true);
+    cl::Buffer buf_c12r(context, c12r, c12r + total_len, true);
+    cl::Buffer buf_c13r(context, c13r, c13r + total_len, true);
+    cl::Buffer buf_c23r(context, c23r, c23r + total_len, true);
+    cl::Buffer buf_c12i(context, c12i, c12i + total_len, true);
+    cl::Buffer buf_c13i(context, c13i, c13i + total_len, true);
+    cl::Buffer buf_c23i(context, c23i, c23i + total_len, true);
     cl::Buffer buf_span(context, CL_MEM_READ_WRITE, sizeof(float) * total_len);
 
     // We use the first device to calculate SPAN
@@ -130,17 +131,17 @@ int RefinedLeeFilter3x3(long nLooks, long height, long width, const float *c11,
     queue.enqueueNDRangeKernel(krnl_getspan, cl::NullRange, global_size);
 
     // Now we can start filting process
-    cl::Buffer buf_prwt(context, Prewitt.begin(), Prewitt.end(), true);
-
     cl::Kernel krnl_rlf(program, "filt_cij");
     krnl_rlf.setArg(0, buf_span);
     krnl_rlf.setArg(1, height);
     krnl_rlf.setArg(2, width);
 
-    auto shared_height = static_cast<long>(group_height) + 8;
+    auto shared_height = static_cast<int>(group_height) + 8;
     krnl_rlf.setArg(3, sizeof(float) * shared_height * shared_height, nullptr);
     krnl_rlf.setArg(4, shared_height);
     krnl_rlf.setArg(5, shared_height);
+
+    cl::Buffer buf_prwt(context, Prewitt.begin(), Prewitt.end(), true);
     krnl_rlf.setArg(6, buf_prwt);
     krnl_rlf.setArg(7, nLooks);
 
@@ -149,74 +150,65 @@ int RefinedLeeFilter3x3(long nLooks, long height, long width, const float *c11,
     cl::Buffer buf_oc11(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c11);
     krnl_rlf.setArg(9, buf_oc11);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc11, false, 0, sizeof(float) * total_len,
                             outC11);
 
     cl::Buffer buf_oc22(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c22);
     krnl_rlf.setArg(9, buf_oc22);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc22, false, 0, sizeof(float) * total_len,
                             outC22);
 
     cl::Buffer buf_oc33(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c33);
     krnl_rlf.setArg(9, buf_oc33);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc33, false, 0, sizeof(float) * total_len,
                             outC33);
 
     cl::Buffer buf_oc12r(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c12r);
     krnl_rlf.setArg(9, buf_oc12r);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc12r, false, 0, sizeof(float) * total_len,
-                            outC12_r);
+                            outC12r);
 
     cl::Buffer buf_oc13r(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c13r);
     krnl_rlf.setArg(9, buf_oc13r);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc13r, false, 0, sizeof(float) * total_len,
-                            outC13_r);
+                            outC13r);
 
     cl::Buffer buf_oc23r(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c23r);
     krnl_rlf.setArg(9, buf_oc23r);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc23r, false, 0, sizeof(float) * total_len,
-                            outC23_r);
+                            outC23r);
 
     cl::Buffer buf_oc12i(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c12i);
     krnl_rlf.setArg(9, buf_oc12i);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc12i, false, 0, sizeof(float) * total_len,
-                            outC12_i);
+                            outC12i);
 
     cl::Buffer buf_oc13i(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c13i);
     krnl_rlf.setArg(9, buf_oc13i);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc13i, false, 0, sizeof(float) * total_len,
-                            outC13_i);
+                            outC13i);
 
     cl::Buffer buf_oc23i(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c23i);
     krnl_rlf.setArg(9, buf_oc23i);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc23i, false, 0, sizeof(float) * total_len,
-                            outC23_i);
+                            outC23i);
 
     queue.finish();
 
@@ -226,13 +218,13 @@ int RefinedLeeFilter3x3(long nLooks, long height, long width, const float *c11,
   return 0;
 }
 
-int RefinedLeeFilter2x2(long nLooks, long height, long width, const float *c11,
-                        const float *c22, const float *c12_r,
-                        const float *c12_i, float *outC11, float *outC22,
-                        float *outC12_r, float *outC12_i) {
+int RefinedLeeFilter2x2(int nLooks, int height, int width, const float *c11,
+                        const float *c22, const float *c12r, const float *c12i,
+                        float *outC11, float *outC22, float *outC12r,
+                        float *outC12i) {
   try {
     cl::Context context = cl::Context::getDefault();
-    auto device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
+    cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
     cl::CommandQueue queue(context);
 
     // Compile the program
@@ -250,8 +242,8 @@ int RefinedLeeFilter2x2(long nLooks, long height, long width, const float *c11,
     // Create buffers
     cl::Buffer buf_c11(context, c11, c11 + total_len, true);
     cl::Buffer buf_c22(context, c22, c22 + total_len, true);
-    cl::Buffer buf_c12r(context, c12_r, c12_r + total_len, true);
-    cl::Buffer buf_c12i(context, c12_i, c12_i + total_len, true);
+    cl::Buffer buf_c12r(context, c12r, c12r + total_len, true);
+    cl::Buffer buf_c12i(context, c12i, c12i + total_len, true);
     cl::Buffer buf_span(context, CL_MEM_READ_WRITE, sizeof(float) * total_len);
 
     // We use the first device to calculate SPAN
@@ -262,53 +254,48 @@ int RefinedLeeFilter2x2(long nLooks, long height, long width, const float *c11,
     queue.enqueueNDRangeKernel(krnl_getspan, cl::NullRange, global_size);
 
     // Now we can start filting process
-    cl::Buffer buf_prwt(context, Prewitt.begin(), Prewitt.end(), true);
-
     cl::Kernel krnl_rlf(program, "filt_cij");
     krnl_rlf.setArg(0, buf_span);
     krnl_rlf.setArg(1, height);
     krnl_rlf.setArg(2, width);
 
-    auto shared_height = static_cast<long>(group_height) + 8;
+    auto shared_height = static_cast<int>(group_height) + 8;
     krnl_rlf.setArg(3, sizeof(float) * shared_height * shared_height, nullptr);
     krnl_rlf.setArg(4, shared_height);
     krnl_rlf.setArg(5, shared_height);
+
+    cl::Buffer buf_prwt(context, Prewitt.begin(), Prewitt.end(), true);
     krnl_rlf.setArg(6, buf_prwt);
     krnl_rlf.setArg(7, nLooks);
 
     // For every channel
-
     cl::Buffer buf_oc11(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c11);
     krnl_rlf.setArg(9, buf_oc11);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc11, false, 0, sizeof(float) * total_len,
                             outC11);
 
     cl::Buffer buf_oc22(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c22);
     krnl_rlf.setArg(9, buf_oc22);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc22, false, 0, sizeof(float) * total_len,
                             outC22);
 
     cl::Buffer buf_oc12r(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c12r);
     krnl_rlf.setArg(9, buf_oc12r);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc12r, false, 0, sizeof(float) * total_len,
-                            outC12_r);
+                            outC12r);
 
     cl::Buffer buf_oc12i(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
     krnl_rlf.setArg(8, buf_c12i);
     krnl_rlf.setArg(9, buf_oc12i);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size,
-                               group_size);
+    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
     queue.enqueueReadBuffer(buf_oc12i, false, 0, sizeof(float) * total_len,
-                            outC12_i);
+                            outC12i);
 
     queue.finish();
 

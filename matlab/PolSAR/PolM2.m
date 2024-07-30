@@ -40,8 +40,8 @@ classdef (Abstract) PolM2 < PolMat
             value = class(obj.m11);
         end
 
-        function mat = getMatAt(obj, row, col)
-            % assert(row >= 1 && row <= obj.Height && col >= 1 && col <= obj.Width);
+        function mat = MatAt(obj, row, col)
+            assert(row >= 1 && row <= obj.Height && col >= 1 && col <= obj.Width);
             mat = zeros(2, obj.Dtype);
             mat(1,1) = obj.m11(row,col);
             mat(1,2) = obj.m12_r(row,col) + 1i * obj.m12_i(row,col);
@@ -49,8 +49,8 @@ classdef (Abstract) PolM2 < PolMat
             mat(2,2) = obj.m22(row,col);
         end
 
-        function page = getPageAt(obj, x, y)
-            % assert(x >= 1 && x <= 2 && y >= 1 && y <= 2);
+        function page = PageAt(obj, x, y)
+            assert(x >= 1 && x <= 2 && y >= 1 && y <= 2);
             if x == y
                 switch x
                     case 1
@@ -61,11 +61,11 @@ classdef (Abstract) PolM2 < PolMat
             elseif x < y
                 page = obj.m12_r + 1i * obj.m12_i;
             else
-                page = conj(obj.getPageAt(y, x));
+                page = conj(obj.PageAt(y, x));
             end
         end
 
-        function outObj = fmapPage(obj, func)
+        function outObj = MapPage(obj, func)
             outObj = obj;
 
             new_m11 = func(obj.m11);

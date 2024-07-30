@@ -38,7 +38,7 @@ switch method
         result = (result - c) ./ (d - c);
     case "Log"
         a = min(bands, [], [1 2]);
-        result = log10(bands - a + 1);
+        result = 10 * log10(bands - a + 1);
         result = result ./ max(result, [], [1 2]);
     otherwise
         error("Unknown stretch method: %s", method);

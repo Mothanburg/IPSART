@@ -1,8 +1,8 @@
 function InitGaRS(options)
 
 arguments
-    options.imports(1,:) string = ["Utils", "Basic", "Data", "Polarimetry"]
-    options.verbose = false
+    options.imports(1,:) string = ["Utils", "Basic", "Data", "SAR", "PolSAR", "InSAR"]
+    options.enableGPU = true
 end
 
 % Create the basic config of the GaRS library.
@@ -34,12 +34,11 @@ if exist(libpath, "dir")
         GARS_CONFIG.CLIB = clibConfiguration("gars", "ExecutionMode", "outofprocess");
     end
     % Test gpu capability
-    try
+    GARS_CONFIG.CAPABILITY = 2;
+    try       
         errno = clib.gars.GaRSTestOpenCL();
-        if errno == 0
-            loginfo("'%d' returned when testing GPU capability.");
-            GARS_CONFIG.CAPABILITY = 2; % The platform can use GPU
-        else
+
+        if ~options.enableGPU || errno ~= 0
             GARS_CONFIG.CAPABILITY = 1; % The platform can only use CPU
         end
     catch
@@ -94,9 +93,3 @@ end
 
 end
 
-function loginfo(msg, varargin)
-if evalin("caller", "options.verbose")
-    fmt = sprintf(msg, varargin{:});
-    disp(fmt);
-end
-end

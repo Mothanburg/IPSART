@@ -10,10 +10,9 @@ end
 
 function result = seq_call(x, funcs)
 
-if isempty(funcs)
-    result = x;
-else
-    result = seq_call(feval(funcs{1}, x), funcs(2:end));
+result = x;
+for fn = funcs
+    result = feval(fn{:}, result);
 end
 
 end

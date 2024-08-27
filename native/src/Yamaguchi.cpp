@@ -1,64 +1,73 @@
-#include <cmath>
-#include <complex>
-#include <numbers>
-
 #include "GaRS.h"
 
-#define EIGEN_USE_BLAS
-#define EIGEN_USE_LAPACKE
-#define lapack_complex_float std::complex<float>
-#define lapack_complex_double std::complex<double>
-#include <Eigen/Core>
+#include "utils.hpp"
 
 using namespace Eigen;
 using namespace std;
 using namespace std::literals;
-constexpr float sqrt2 = std::numbers::sqrt2_v<float>;
 
-void Yamaguchi(int height, int width, const float *c11, const float *c22,
-               const float *c33, const float *c12r, const float *c13r,
-               const float *c23r, const float *c12i, const float *c13i,
-               const float *c23i, float *outPs, float *outPd, float *outPv,
-               float *outPh) {
-  auto len = height * width;
-# pragma omp parallel for
+template <typename TData, int Dim>
+static int yamaguchi(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
+                     TData *outPd, TData *outPv, TData *outPh) {
+  using TComplex = PolMatView<TData, Dim>::TComplex;
+  using TMat = PolMatView<TData, Dim>::TMat;
+  using TArray =
+      Array<TComplex, TMat::RowsAtCompileTime, TMat::ColsAtCompileTime>;
+
+  constexpr TData sqrt2 = std::numbers::sqrt2_v<TData>;
+
+  int len = pol_mat.Rows * pol_mat.Cols;
+#pragma omp parallel for
   for (auto idx = 0; idx < len; idx++) {
-    Array33cf c;
-    c << scomplex(c11[idx], 0.0f), scomplex(c12r[idx], c12i[idx]),
-        scomplex(c13r[idx], c13i[idx]), scomplex(c12r[idx], -c12i[idx]),
-        scomplex(c22[idx], 0.0f), scomplex(c23r[idx], c23i[idx]),
-        scomplex(c13r[idx], -c13i[idx]), scomplex(c23r[idx], -c23i[idx]),
-        scomplex(c33[idx], 0.0f);
+    TArray c = pol_mat.at(idx).array();
 
     // The form of helix scattering
-    Array33cf ch;
+    TArray ch;
     if (c(0, 1).imag() + c(1, 2).imag() > 0) {
-      ch << 1.0f, 1.0if * sqrt2, -1.0f, -1.0if * sqrt2, 2.0f, 1.0f * sqrt2,
-          -1.0f, -1.0if * sqrt2, 1.0f;
-      ch /= 4.0f;
+      ch << static_cast<TData>(1.0), TComplex(0, sqrt2),
+          static_cast<TData>(-1.0), TComplex(0, -sqrt2),
+          static_cast<TData>(2.0), TComplex(0, sqrt2), static_cast<TData>(-1.0),
+          TComplex(0, -sqrt2), static_cast<TData>(1.0);
+      ch /= static_cast<TData>(4.0);
     } else {
-      ch << 1.0f, -1.0if * sqrt2, -1.0f, 1.0if * sqrt2, 2.0f, -1.0f * sqrt2,
-          -1.0f, 1.0if * sqrt2, 1.0f;
-      ch /= 4.0f;
+      ch << static_cast<TData>(1.0), TComplex(0, -sqrt2),
+          static_cast<TData>(-1.0), TComplex(0, sqrt2), static_cast<TData>(2.0),
+          TComplex(0, -sqrt2), static_cast<TData>(-1.0), TComplex(0, sqrt2),
+          static_cast<TData>(1.0);
+      ch /= static_cast<TData>(4.0);
     }
-    float fh = 2.0f * abs(c(0, 1).imag() + c(1, 2).imag());
+    TData fh = static_cast<TData>(2.0) * abs(c(0, 1).imag() + c(1, 2).imag());
 
     // The form of volume scattering
-    const float coratio = 10.0f * log10(c(2, 2).real() / c(0, 0).real());
-    Array33cf cv;
-    float fv;
-    if (coratio < -2.0f) {
-      cv << 8.0f, 0.0f, 2.0f, 0.0f, 4.0f, 0.0f, 2.0f, 0.0f, 3.0f;
-      cv /= 15.0f;
-      fv = 15.0f * (c(1, 1).real() - fh / 2.0f) / 4.0f;
+    const TData coratio =
+        static_cast<TData>(10.0) * log10(c(2, 2).real() / c(0, 0).real());
+    TArray cv;
+    TData fv;
+    if (coratio < static_cast<TData>(-2.0)) {
+      cv << static_cast<TData>(8.0), static_cast<TData>(0.0),
+          static_cast<TData>(2.0), static_cast<TData>(0.0),
+          static_cast<TData>(4.0), static_cast<TData>(0.0),
+          static_cast<TData>(2.0), static_cast<TData>(0.0),
+          static_cast<TData>(3.0);
+      cv /= static_cast<TData>(15.0);
+      fv = static_cast<TData>(15.0) *
+           (c(1, 1).real() - fh / static_cast<TData>(2.0)) /
+           static_cast<TData>(4.0);
     } else if (coratio < 2) {
       cv << 3.0f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f, 1.0f, 0.0f, 3.0f;
-      cv /= 8.0f;
-      fv = 4.0f * (c(1, 1).real() - fh / 2.0f);
+      cv /= static_cast<TData>(8.0);
+      fv = static_cast<TData>(4.0) *
+           (c(1, 1).real() - fh / static_cast<TData>(2.0));
     } else {
-      cv << 3.0f, 0.0f, 2.0f, 0.0f, 4.0f, 0.0f, 2.0f, 0.0f, 8.0f;
-      cv /= 15.0f;
-      fv = 15.0f * (c(1, 1).real() - fh / 2.0f) / 4.0f;
+      cv << static_cast<TData>(3.0), static_cast<TData>(0.0),
+          static_cast<TData>(2.0), static_cast<TData>(0.0),
+          static_cast<TData>(4.0), static_cast<TData>(0.0),
+          static_cast<TData>(2.0), static_cast<TData>(0.0),
+          static_cast<TData>(8.0);
+      cv /= static_cast<TData>(15.0);
+      fv = static_cast<TData>(15.0) *
+           (c(1, 1).real() - fh / static_cast<TData>(2.0)) /
+           static_cast<TData>(4.0);
     }
 
     // Remove volume and helix scattering only when cross-pol scattering is
@@ -66,18 +75,18 @@ void Yamaguchi(int height, int width, const float *c11, const float *c22,
     if (c(1, 1).real() < c(0, 0).real() && c(1, 1).real() < c(2, 2).real()) {
       c = c - fh * ch - fv * cv;
     } else {
-      fh = 0.0f;
-      fv = 0.0f;
+      fh = static_cast<TData>(0.0);
+      fv = static_cast<TData>(0.0);
     }
 
-    float a2, b2, fd, fs;
+    TData a2, b2, fd, fs;
     if (c(0, 2).real() > 0) {
       a2 = 1.0f;
       fd = ((c(2, 2) * c(0, 0) - c(0, 2) * c(2, 0)) /
             (c(2, 2) + c(0, 0) + c(0, 2) + c(2, 0)))
                .real();
       fs = c(2, 2).real() - fd;
-      scomplex tmp = ((c(0, 2) + fd) / fs);
+      TComplex tmp = ((c(0, 2) + fd) / fs);
       b2 = abs(tmp * conj(tmp));
     } else {
       b2 = 1;
@@ -85,13 +94,33 @@ void Yamaguchi(int height, int width, const float *c11, const float *c22,
             (c(0, 2) + c(2, 0) - c(0, 0) - c(2, 2)))
                .real();
       fd = c(2, 2).real() - fs;
-      scomplex tmp = ((c(0, 2) - fs) / fd);
+      TComplex tmp = ((c(0, 2) - fs) / fd);
       a2 = abs(tmp * conj(tmp));
     }
 
-    outPs[idx] = abs(fs) * (1.0f + b2);
-    outPd[idx] = abs(fd) * (1.0f + a2);
+    outPs[idx] = abs(fs) * (static_cast<TData>(1.0) + b2);
+    outPd[idx] = abs(fd) * (static_cast<TData>(1.0) + a2);
     outPh[idx] = abs(fh);
     outPv[idx] = abs(fv);
   }
+}
+
+void Yamaguchif(int rows, int cols, const float *c11, const float *c22,
+                const float *c33, const float *c12r, const float *c13r,
+                const float *c23r, const float *c12i, const float *c13i,
+                const float *c23i, float *outPs, float *outPd, float *outPv,
+                float *outPh) {
+  PolMatView<float, 3> mat(rows, cols, c11, c22, c33, c12r, c13r, c23r, c12i,
+                           c13i, c23i);
+  yamaguchi(mat, outPs, outPd, outPv, outPh);
+}
+
+void Yamaguchid(int rows, int cols, const double *c11, const double *c22,
+                const double *c33, const double *c12r, const double *c13r,
+                const double *c23r, const double *c12i, const double *c13i,
+                const double *c23i, double *outPs, double *outPd, double *outPv,
+                double *outPh) {
+  PolMatView<double, 3> mat(rows, cols, c11, c22, c33, c12r, c13r, c23r, c12i,
+                            c13i, c23i);
+  yamaguchi(mat, outPs, outPd, outPv, outPh);
 }

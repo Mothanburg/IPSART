@@ -16,18 +16,19 @@ end
 
 global GARS_CONFIG
 
-if GARS_CONFIG.CAPABILITY >= 1 && class(image) == "single" && numel(image) > 400000
+if GARS_CONFIG.CAPABILITY >= 1 && class(image) == "single" ...
+        && numel(image) > 400000
 
     try
         if ~isreal(image)
-            [errno,r_part] = clib.gars.Multilook(real(image), rowLook, colLook, ...
-                fix(in_rows / rowLook), fix(in_cols / colLook));
+            [errno,r_part] = clib.gars.Multilook(real(image), rowLook, ...
+                colLook, fix(in_rows / rowLook), fix(in_cols / colLook));
             if errno ~= 0
                 error("error number %d is returned.", errno);
             end
 
-            [errno,i_part] = clib.gars.Multilook(imag(image), rowLook, colLook, ...
-                fix(in_rows / rowLook), fix(in_cols / colLook));
+            [errno,i_part] = clib.gars.Multilook(imag(image), rowLook, ...
+                colLook, fix(in_rows / rowLook), fix(in_cols / colLook));
             if errno ~= 0
                 error("error number %d is returned.", errno);
             end
@@ -43,7 +44,8 @@ if GARS_CONFIG.CAPABILITY >= 1 && class(image) == "single" && numel(image) > 400
 
         return;
     catch e
-        warning(e.identifier, "An error occurred when calling library, fallback to matlab.\n" + ...
+        warning(e.identifier, "An error occurred when calling library, " + ...
+            "fallback to matlab.\n" + ...
             "        Error message: %s", e.message);
     end
 end
@@ -61,7 +63,8 @@ row_left = rem(in_rows, rowLook);
 col_strides = repmat(colLook, 1, floor(in_cols / colLook));
 col_left = rem(in_cols, colLook);
 
-patched = mat2cell(image(1:end-row_left,1:end-col_left), row_strides, col_strides);
+patched = mat2cell(image(1:end-row_left,1:end-col_left), ...
+    row_strides, col_strides);
 
 result = cellfun(@(x) mean(x(:)), patched);
 

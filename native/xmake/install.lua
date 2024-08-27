@@ -7,11 +7,7 @@ function main(target)
             raise("please change mode '%s' to a kind of release mode.", curmode)
         end
 
-        local installdir = path.join("..", "matlab", "bin")
-        installdir = path.absolute(installdir, os.projectdir())
-        if not os.exists(installdir) then
-            os.mkdir(installdir)
-        end
+        local installdir = target:installdir()
 
         -- install all shared libs of depended packages
         local installed = {}

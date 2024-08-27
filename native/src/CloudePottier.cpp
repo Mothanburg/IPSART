@@ -1,75 +1,83 @@
-#include <cmath>
-#include <numbers>
+#include "utils.hpp"
 
 #include "GaRS.h"
 
-#define EIGEN_USE_BLAS
-#define EIGEN_USE_LAPACKE
-#define lapack_complex_float std::complex<float>
-#define lapack_complex_double std::complex<double>
-#include <Eigen/Eigenvalues>
-
-using namespace Eigen;
 using namespace std;
+using namespace Eigen;
 
-constexpr float pi = std::numbers::pi_v<float>;
+template <typename TData, int Dim>
+static void cloude_pottier(const PolMatView<TData, Dim> &pol_mat, TData *outH,
+                           TData *outAlpha, TData *outA) {
+  using TMat = PolMatView<TData, Dim>::TMat;
+  using TRowVec = Array<TData, Dim, 1>;
 
-void CloudePottier(int height, int width, const float *t11, const float *t22,
-                   const float *t33, const float *t12r, const float *t13r,
-                   const float *t23r, const float *t12i, const float *t13i,
-                   const float *t23i, float *outH, float *outAlpha,
-                   float *outA) {
-  auto len = height * width;
-# pragma omp parallel for
-  for (auto idx = 0; idx < len; idx++) {
-    Matrix3cf t;
-    t << scomplex(t11[idx]), scomplex(t12r[idx], t12i[idx]),
-        scomplex(t13r[idx], t13i[idx]), scomplex(t12r[idx], -t12i[idx]),
-        scomplex(t22[idx]), scomplex(t23r[idx], t23i[idx]),
-        scomplex(t13r[idx], -t13i[idx]), scomplex(t23r[idx], -t23i[idx]),
-        scomplex(t33[idx]);
+  constexpr TData PI = std::numbers::pi_v<TData>;
 
-    const SelfAdjointEigenSolver<Matrix3cf> eig(t);
-    const Array3f eig_vals = eig.eigenvalues().array().abs();
-    const Matrix3cf eig_vecs = eig.eigenvectors();
+  int len = pol_mat.Rows * pol_mat.Cols;
+#pragma omp parallel for
+  for (int idx = 0; idx < len; idx++) {
+    const TMat t = pol_mat.at(idx);
 
-    const Array3f p = eig_vals / eig_vals.sum();
-    outH[idx] = p.unaryExpr([](auto x) {
-                   return x != 0.0f ? -x * log(x) / log(3.0f) : 0.0f;
-                 }).sum();
+    const SelfAdjointEigenSolver<TMat> eig(t);
+    const TRowVec eig_vals = eig.eigenvalues().array().abs();
+    const TMat eig_vecs = eig.eigenvectors();
 
-    const Array3f alphas = eig_vecs.row(0).array().abs();
-    outAlpha[idx] = 180.0f * (p * alphas.acos()).sum() / pi;
+    const TRowVec p = eig_vals / eig_vals.sum();
+    const TRowVec alphas = eig_vecs.row(0).array().abs();
 
-    const float p1 = p.maxCoeff();
-    const float p3 = p.minCoeff();
-    const float p_sum = p.sum();
-    outA[idx] = (p_sum - p1 - 2.0f * p3) / (p_sum - p1);
+    if constexpr (Dim == 2) {
+      outH[idx] = p.unaryExpr([](auto x) {
+                     return x != static_cast<TData>(0.0)
+                                ? -x * log2(x)
+                                : static_cast<TData>(0.0);
+                   }).sum();
+      outA[idx] = abs(p(0) - p(1)) / p.sum();
+    } else {
+      outH[idx] = p.unaryExpr([](auto x) {
+                     return x != static_cast<TData>(0.0)
+                                ? -x * log(x) / log(static_cast<TData>(3.0))
+                                : static_cast<TData>(0.0);
+                   }).sum();
+      const TData p1 = p.maxCoeff();
+      const TData p3 = p.minCoeff();
+      const TData p_sum = p.sum();
+      outA[idx] = (p_sum - p1 - static_cast<TData>(2.0) * p3) / (p_sum - p1);
+    }
+
+    outAlpha[idx] = static_cast<TData>(180.0) * (p * alphas.acos()).sum() / PI;
   }
 }
 
-void CloudePottierDP(int height, int width, const float *c11, const float *c22,
-                     const float *c12r, const float *c12i, float *outH,
+void CloudePottier3f(int rows, int cols, const float *t11, const float *t22,
+                     const float *t33, const float *t12r, const float *t13r,
+                     const float *t23r, const float *t12i, const float *t13i,
+                     const float *t23i, float *outH, float *outAlpha,
+                     float *outA) {
+  PolMatView<float, 3> mat(rows, cols, t11, t22, t33, t12r, t13r, t23r, t12i,
+                           t13i, t23i);
+  cloude_pottier(mat, outH, outAlpha, outA);
+}
+
+void CloudePottier3d(int rows, int cols, const double *t11, const double *t22,
+                     const double *t33, const double *t12r, const double *t13r,
+                     const double *t23r, const double *t12i, const double *t13i,
+                     const double *t23i, double *outH, double *outAlpha,
+                     double *outA) {
+  PolMatView<double, 3> mat(rows, cols, t11, t22, t33, t12r, t13r, t23r, t12i,
+                            t13i, t23i);
+  cloude_pottier(mat, outH, outAlpha, outA);
+}
+
+void CloudePottier2f(int rows, int cols, const float *t11, const float *t22,
+                     const float *t12r, const float *t12i, float *outH,
                      float *outAlpha, float *outA) {
-  auto len = height * width;
-# pragma omp parallel for
-  for (auto idx = 0; idx < len; idx++) {
-    Matrix2cf c;
-    c << scomplex(c11[idx]), scomplex(c12r[idx], c12i[idx]),
-        scomplex(c12r[idx], -c12i[idx]), scomplex(c22[idx]);
+  PolMatView<float, 2> mat(rows, cols, t11, t22, t12r, t12i);
+  cloude_pottier(mat, outH, outAlpha, outA);
+}
 
-    const SelfAdjointEigenSolver<Matrix2cf> eig(c);
-    const Array2f eig_vals = eig.eigenvalues().array().abs();
-    const Matrix2cf eig_vecs = eig.eigenvectors();
-
-    const Array2f p = eig_vals / eig_vals.sum();
-    outH[idx] = p.unaryExpr([](auto x) {
-                   return x != 0.0f ? -x * log2(x) : 0.0f;
-                 }).sum();
-
-    const Array2f alphas = eig_vecs.row(0).array().abs();
-    outAlpha[idx] = 180.0f * (p * alphas.acos()).sum() / pi;
-
-    outA[idx] = abs(p(0) - p(1)) / p.sum();
-  }
+void CloudePottier2d(int rows, int cols, const double *t11, const double *t22,
+                     const double *t12r, const double *t12i, double *outH,
+                     double *outAlpha, double *outA) {
+  PolMatView<double, 2> mat(rows, cols, t11, t22, t12r, t12i);
+  cloude_pottier(mat, outH, outAlpha, outA);
 }

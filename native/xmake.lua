@@ -1,26 +1,30 @@
+includes("@builtin/check")
+
 add_rules("mode.debug", "mode.release")
-set_languages("c++20", "c99")
+
+set_runtimes("MD")
+
 set_warnings("all")
 
 add_requires("eigen", "openblas", "openmp", "opencl")
 
 target("GaRS")
     set_kind("shared")
-    add_includedirs("include/", { public = true })
-    add_files("src/*.cpp")
     add_packages("eigen", "openblas", "openmp", "opencl")
+
+    set_languages("c++20")
+    add_includedirs("include/", { public = true })
+    set_pcxxheader("include/pch.h")
+    add_files("src/*.cpp")
+
     add_defines("COMPILING_GARS")
     if is_mode("release") then
         add_defines("EIGEN_NO_DEBUG")
     end
-    on_config("on_config")
-    on_install("install")
+    -- disable warnings from MSVC
+    check_macros("_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING", "_MSC_VER")
 
-
-target("test_runable")
-    set_default(false)
-    set_kind("binary")
-    add_files("test/test_runable.cpp")
-    add_tests("default")
-    add_deps("GaRS")
+    set_installdir("../matlab/bin")
+    on_config("xmake/config")
+    on_install("xmake/install")
 

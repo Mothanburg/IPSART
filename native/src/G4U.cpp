@@ -1,97 +1,96 @@
-#include <cmath>
-#include <complex>
-
 #include "GaRS.h"
-
-#define EIGEN_USE_BLAS
-#define EIGEN_USE_LAPACKE
-#define lapack_complex_float std::complex<float>
-#define lapack_complex_double std::complex<double>
-#include <Eigen/Core>
+#include "utils.hpp"
 
 using namespace std;
 using namespace Eigen;
 
-int G4U(int height, int width, const float *t11, const float *t22,
-        const float *t33, const float *t12r, const float *t13r,
-        const float *t23r, const float *t12i, const float *t13i,
-        const float *t23i, float *outPs, float *outPd, float *outPv,
-        float *outPh) {
-  auto len = height * width;
+template <typename TData, int Dim>
+static int g4u(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
+               TData *outPd, TData *outPv, TData *outPh) {
+  using TComplex = PolMatView<TData, Dim>::TComplex;
+  using TMat = PolMatView<TData, Dim>::TMat;
+  using TMatReal =
+      Matrix<TData, TMat::RowsAtCompileTime, TMat::ColsAtCompileTime>;
+
   volatile bool err_flag{false};
 
-# pragma omp parallel for
+  int len = pol_mat.Rows * pol_mat.Cols;
+#pragma omp parallel for
   for (auto idx = 0; idx < len; idx++) {
-    // For almost all cases, error would not happen
-    // We may not need this 'if' clause
-    // if (err_flag) [[unlikely]] {
-    //   continue;
-    // }
-    Matrix3cf t0;
-    t0 << scomplex(t11[idx]), scomplex(t12r[idx], t12i[idx]),
-        scomplex(t13r[idx], t13i[idx]), scomplex(t12r[idx], -t12i[idx]),
-        scomplex(t22[idx]), scomplex(t23r[idx], t23i[idx]),
-        scomplex(t13r[idx], -t13i[idx]), scomplex(t23r[idx], -t23i[idx]),
-        scomplex(t33[idx]);
+    TMat t0 = pol_mat.at(idx);
 
-    float two_theta =
-        atanf(t0(1, 2).real() * 2.0f / (t0(1, 1).real() - t0(2, 2).real())) /
-        2.0f;
+    TData two_theta = atan(t0(1, 2).real() * static_cast<TData>(2.0) /
+                           (t0(1, 1).real() - t0(2, 2).real())) /
+                      static_cast<TData>(2.0);
 
-    Matrix3cf t = t0;
+    TMat t = t0;
     if (!isnan(two_theta)) {
-      Matrix3f r;
-      r << 1.0f, 0.0f, 0.0f, 0.0f, cosf(two_theta), sinf(two_theta), 0.0f,
-          -sinf(two_theta), cosf(two_theta);
+      TMatReal r;
+      r << static_cast<TData>(1.0), static_cast<TData>(0.0),
+          static_cast<TData>(0.0), static_cast<TData>(0.0), cos(two_theta),
+          sin(two_theta), static_cast<TData>(0.0), -sin(two_theta),
+          cos(two_theta);
       t = r * t0 * r.transpose();
     }
-    float tp = t.trace().real();
+    TData tp = t.trace().real();
 
-    float fs{0.0f}, fd{0.0f}, fv{0.0f}, fh = abs(t(1, 2).imag()) * 2.0f;
+    TData fs, fd, fv, fh = abs(t(1, 2).imag()) * static_cast<TData>(2.0);
 
-    float c1 = t(0, 0).real() - t(1, 1).real() + t(2, 2).real() * 7.0f / 8.0f +
-               fh / 16.0f;
-    if (c1 > 0.0) {
-      scomplex c;
-      float coratio =
-          log10f((t(0, 0).real() + t(1, 1).real() - t(0, 1).real() * 2.0f) /
-                 (t(0, 0).real() + t(1, 1).real() + t(0, 1).real() * 2.0f)) *
-          10.0f;
-      if (coratio < -2.0f) {
-        fv = (t(2, 2).real() * 2.0f - fh) * 15.0f / 8.0f;
-        if (fv < 0.0f) {
-          fh = 0.0f;
-          fv = t(2, 2).real() * 2.0f * 15.0f / 8.0f;
+    TData c1 =
+        t(0, 0).real() - t(1, 1).real() +
+        t(2, 2).real() * static_cast<TData>(7.0) / static_cast<TData>(8.0) +
+        fh / static_cast<TData>(16.0);
+
+    if (c1 > static_cast<TData>(0.0)) {
+      TComplex c;
+      TData coratio = log10((t(0, 0).real() + t(1, 1).real() -
+                             t(0, 1).real() * static_cast<TData>(2.0)) /
+                            (t(0, 0).real() + t(1, 1).real() +
+                             t(0, 1).real() * static_cast<TData>(2.0))) *
+                      static_cast<TData>(10.0);
+
+      if (coratio < static_cast<TData>(-2.0)) {
+        fv = (t(2, 2).real() * static_cast<TData>(2.0) - fh) *
+             static_cast<TData>(15.0) / static_cast<TData>(8.0);
+        if (fv < static_cast<TData>(0.0)) {
+          fh = static_cast<TData>(0.0);
+          fv = t(2, 2).real() * static_cast<TData>(2.0) *
+               static_cast<TData>(15.0) / static_cast<TData>(8.0);
         }
-        c = t(0, 1) + t(0, 2) - fv / 6.0f;
-      } else if (coratio > -2.0f && coratio < 2.0f) {
-        fv = (t(2, 2).real() * 2.0f - fh) * 2.0f;
-        if (fv < 0.0f) {
-          fh = 0.0f;
-          fv = t(2, 2).real() * 2.0f * 2.0f;
+        c = t(0, 1) + t(0, 2) - fv / static_cast<TData>(6.0);
+      } else if (coratio > static_cast<TData>(-2.0) &&
+                 coratio < static_cast<TData>(2.0)) {
+        fv = (t(2, 2).real() * static_cast<TData>(2.0) - fh) *
+             static_cast<TData>(2.0);
+        if (fv < static_cast<TData>(0.0)) {
+          fh = static_cast<TData>(0.0);
+          fv = t(2, 2).real() * static_cast<TData>(2.0) *
+               static_cast<TData>(2.0);
         }
         c = t(0, 1) + t(0, 2);
       } else {
-        fv = (t(2, 2).real() * 2.0f - fh) * 15.0f / 8.0f;
-        if (fv < 0.0f) {
-          fh = 0.0f;
-          fv = t(2, 2).real() * 2.0f * 15.0f / 8.0f;
+        fv = (t(2, 2).real() * static_cast<TData>(2.0) - fh) *
+             static_cast<TData>(15.0) / static_cast<TData>(8.0);
+        if (fv < static_cast<TData>(0.0)) {
+          fh = static_cast<TData>(0.0);
+          fv = t(2, 2).real() * static_cast<TData>(2.0) *
+               static_cast<TData>(15.0) / static_cast<TData>(8.0);
         }
-        c = t(0, 1) + t(0, 2) + fv / 6.0f;
+        c = t(0, 1) + t(0, 2) + fv / static_cast<TData>(6.0);
       }
 
-      float s = t(0, 0).real() - fv / 2.0f;
-      float d = tp - fv - fh - s;
+      TData s = t(0, 0).real() - fv / static_cast<TData>(2.0);
+      TData d = tp - fv - fh - s;
 
       if ((fv + fh) >= tp) {
-        outPs[idx] = 0.0f;
-        outPd[idx] = 0.0f;
+        outPs[idx] = static_cast<TData>(0.0);
+        outPd[idx] = static_cast<TData>(0.0);
         outPv[idx] = tp - fh;
         outPh[idx] = fh;
         continue;
       } else {
-        float c0 = t(0, 0).real() * 2.0f + fh - tp;
-        if (c0 > 0.0f) {
+        TData c0 = t(0, 0).real() * static_cast<TData>(2.0) + fh - tp;
+        if (c0 > static_cast<TData>(0.0)) {
           fs = s + abs(c) * abs(c) / s;
           fd = d - abs(c) * abs(c) / s;
         } else {
@@ -99,31 +98,32 @@ int G4U(int height, int width, const float *t11, const float *t22,
           fd = d + abs(c) * abs(c) / d;
         }
       }
-
     } else {
-      fv = (t(2, 2).real() * 2.0f - fh) * 15.0f / 16.0f;
-      if (fv < 0.0f) {
-        fh = 0.0f;
-        fv = t(2, 2).real() * 2.0f * 15.0f / 16.0f;
+      fv = (t(2, 2).real() * 2.0f - fh) * static_cast<TData>(15.0) /
+           static_cast<TData>(16.0);
+      if (fv < static_cast<TData>(0.0)) {
+        fh = static_cast<TData>(0.0);
+        fv = t(2, 2).real() * static_cast<TData>(2.0) *
+             static_cast<TData>(15.0) / static_cast<TData>(16.0);
       }
-      float s = t(0, 0).real();
-      float d = tp - fv - fh - s;
-      scomplex c = t(0, 1) + t(0, 2);
+      TData s = t(0, 0).real();
+      TData d = tp - fv - fh - s;
+      TComplex c = t(0, 1) + t(0, 2);
       fs = s - abs(c) * abs(c) / d;
       fd = d + abs(c) * abs(c) / d;
     }
 
-    if (fs >= 0.0f && fd >= 0.0f) {
+    if (fs >= static_cast<TData>(0.0) && fd >= static_cast<TData>(0.0)) {
       outPs[idx] = fs;
       outPd[idx] = fd;
       outPv[idx] = fv;
       outPh[idx] = fh;
-    } else if (fs >= 0.0f && fd < 0.0f) {
+    } else if (fs >= static_cast<TData>(0.0) && fd < static_cast<TData>(0.0)) {
       outPs[idx] = tp - fv - fh;
       outPd[idx] = 0;
       outPv[idx] = fv;
       outPh[idx] = fh;
-    } else if (fs < 0.0f && fd >= 0.0f) {
+    } else if (fs < static_cast<TData>(0.0) && fd >= static_cast<TData>(0.0)) {
       outPs[idx] = 0;
       outPd[idx] = tp - fh - fv;
       outPv[idx] = fv;
@@ -134,4 +134,24 @@ int G4U(int height, int width, const float *t11, const float *t22,
     }
   }
   return err_flag ? -1 : 0;
+}
+
+int G4Uf(int rows, int cols, const float *t11, const float *t22,
+         const float *t33, const float *t12r, const float *t13r,
+         const float *t23r, const float *t12i, const float *t13i,
+         const float *t23i, float *outPs, float *outPd, float *outPv,
+         float *outPh) {
+  PolMatView<float, 3> mat(rows, cols, t11, t22, t33, t12r, t13r, t23r, t12i,
+                           t13i, t23i);
+  return g4u(mat, outPs, outPd, outPv, outPh);
+}
+
+int G4Ud(int rows, int cols, const double *t11, const double *t22,
+         const double *t33, const double *t12r, const double *t13r,
+         const double *t23r, const double *t12i, const double *t13i,
+         const double *t23i, double *outPs, double *outPd, double *outPv,
+         double *outPh) {
+  PolMatView<double, 3> mat(rows, cols, t11, t22, t33, t12r, t13r, t23r, t12i,
+                            t13i, t23i);
+  return g4u(mat, outPs, outPd, outPv, outPh);
 }

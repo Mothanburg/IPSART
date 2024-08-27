@@ -1,24 +1,21 @@
-#ifdef _MSC_VER
-#define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
-#endif
-
 #include <array>
+#include <type_traits>
 
 #include "GaRS.h"
-#include "utils.hpp"
 
 #define CL_HPP_TARGET_OPENCL_VERSION 200
 #define CL_HPP_ENABLE_EXCEPTIONS
 #include <CL/opencl.hpp>
 
-#include "rlf_kernel.src.h"
+#include "RefinedLeeFilter.cl.h"
 
 using namespace std;
 
 // clang-format off
-
 // Prewitt operators (Row-major)
-constexpr array<float, 7ull * 7 * 8> Prewitt{
+template <typename TData>
+  requires is_same_v<TData, float> || is_same_v<TData, double>
+constexpr array<TData, 7 * 7 * 8> Prewitt {
   // Prewitt 1
   0, 0, 0, 1, 1, 1, 1,
   0, 0, 0, 1, 1, 1, 1,
@@ -86,221 +83,132 @@ constexpr array<float, 7ull * 7 * 8> Prewitt{
 };
 // clang-format on
 
-int RefinedLeeFilter3x3(int nLooks, int height, int width, const float *c11,
-                        const float *c22, const float *c33, const float *c12r,
-                        const float *c13r, const float *c23r, const float *c12i,
-                        const float *c13i, const float *c23i, float *outC11,
-                        float *outC22, float *outC33, float *outC12r,
-                        float *outC13r, float *outC23r, float *outC12i,
-                        float *outC13i, float *outC23i) {
+template <typename IntTy>
+  requires std::is_integral_v<IntTy>
+inline IntTy int_sqrt(IntTy x) {
+  auto res = std::sqrt(static_cast<long double>(x));
+  return static_cast<IntTy>(std::round(res));
+}
+
+template <typename TData, int Dim>
+static int refined_lee_filter(int lookNum, int rows, int cols,
+                              const array<const TData *, Dim * Dim> &inputs,
+                              const array<TData *, Dim * Dim> &outputs) {
+  constexpr int MatSize = Dim * Dim;
   try {
     cl::Context context = cl::Context::getDefault();
     cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
     cl::CommandQueue queue(context);
 
-    // Compile the program
-    cl::Program program(context, src_rlf_kernel);
-    program.build(device, "-cl-std=CL2.0");
+    cl::Program program(context, SRC_REFINEDLEEFILTER);
+    if constexpr (is_same_v<TData, float>) {
+      program.build(device, "-cl-std=CL2.0");
+    } else {
+      /* TData is double */
+      program.build(device, "-cl-std=CL2.0 -cl-fp64 -DENABLE_FP64");
+    }
 
-    // Prepare to execute the kernel
-    auto total_len = height * width;
-    cl::NDRange global_size(height, width);
+    int total_len = rows * cols;
+    cl::NDRange global_size(rows, cols);
 
     auto max_size = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
     auto group_height = int_sqrt(max_size);
     cl::NDRange group_size(group_height, group_height);
 
-    // Create buffers
-    cl::Buffer buf_c11(context, c11, c11 + total_len, true);
-    cl::Buffer buf_c22(context, c22, c22 + total_len, true);
-    cl::Buffer buf_c33(context, c33, c33 + total_len, true);
-    cl::Buffer buf_c12r(context, c12r, c12r + total_len, true);
-    cl::Buffer buf_c13r(context, c13r, c13r + total_len, true);
-    cl::Buffer buf_c23r(context, c23r, c23r + total_len, true);
-    cl::Buffer buf_c12i(context, c12i, c12i + total_len, true);
-    cl::Buffer buf_c13i(context, c13i, c13i + total_len, true);
-    cl::Buffer buf_c23i(context, c23i, c23i + total_len, true);
-    cl::Buffer buf_span(context, CL_MEM_READ_WRITE, sizeof(float) * total_len);
+    array<cl::Buffer, Dim * Dim> buf_inputs, buf_outputs;
+    for (auto idx = 0; idx < MatSize; idx++) {
+      buf_inputs[idx] = std::move(
+          cl::Buffer(context, inputs[idx], inputs[idx] + total_len, true));
+      buf_outputs[idx] = std::move(
+          cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(TData) * total_len));
+    }
 
-    // We use the first device to calculate SPAN
-    cl::Kernel krnl_getspan(program, "mat_add3");
-    krnl_getspan.setArg(0, buf_span);
-    krnl_getspan.setArg(1, buf_c11);
-    krnl_getspan.setArg(2, buf_c22);
-    krnl_getspan.setArg(3, buf_c33);
-    queue.enqueueNDRangeKernel(krnl_getspan, cl::NullRange, global_size);
+    cl::Buffer buf_span(context, CL_MEM_READ_WRITE, sizeof(TData) * total_len);
+    if constexpr (Dim == 2) {
+      cl::Kernel krnl_span_calc(program, "span_calc2");
+      krnl_span_calc.setArg(0, buf_inputs[0]);
+      krnl_span_calc.setArg(1, buf_inputs[1]);
+      krnl_span_calc.setArg(2, buf_span);
+    } else {
+      cl::Kernel krnl_span_calc(program, "span_calc3");
+      krnl_span_calc.setArg(0, buf_inputs[0]);
+      krnl_span_calc.setArg(1, buf_inputs[1]);
+      krnl_span_calc.setArg(2, buf_inputs[2]);
+      krnl_span_calc.setArg(3, buf_inputs);
+    }
 
-    // Now we can start filting process
-    cl::Kernel krnl_rlf(program, "filt_cij");
-    krnl_rlf.setArg(0, buf_span);
-    krnl_rlf.setArg(1, height);
-    krnl_rlf.setArg(2, width);
+    cl::Kernel krnl_filter(program, "page_filting");
+    krnl_filter.setArg(0, rows);
+    krnl_filter.setArg(1, cols);
+    krnl_filter.setArg(2, buf_span);
 
-    auto shared_height = static_cast<int>(group_height) + 8;
-    krnl_rlf.setArg(3, sizeof(float) * shared_height * shared_height, nullptr);
-    krnl_rlf.setArg(4, shared_height);
-    krnl_rlf.setArg(5, shared_height);
+    auto shm_size = group_height + 8;
+    krnl_filter.setArg(3, shm_size);
+    krnl_filter.setArg(4, shm_size);
+    krnl_filter.setArg(5, sizeof(TData) * shm_size * shm_size);
 
-    cl::Buffer buf_prwt(context, Prewitt.begin(), Prewitt.end(), true);
-    krnl_rlf.setArg(6, buf_prwt);
-    krnl_rlf.setArg(7, nLooks);
+    cl::Buffer buf_prwt(context, Prewitt<TData>.begin(), Prewitt<TData>.end(),
+                        true);
+    krnl_filter.setArg(6, buf_prwt);
+    krnl_filter.setArg(7, lookNum);
 
-    // For every channel
-
-    cl::Buffer buf_oc11(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c11);
-    krnl_rlf.setArg(9, buf_oc11);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc11, false, 0, sizeof(float) * total_len,
-                            outC11);
-
-    cl::Buffer buf_oc22(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c22);
-    krnl_rlf.setArg(9, buf_oc22);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc22, false, 0, sizeof(float) * total_len,
-                            outC22);
-
-    cl::Buffer buf_oc33(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c33);
-    krnl_rlf.setArg(9, buf_oc33);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc33, false, 0, sizeof(float) * total_len,
-                            outC33);
-
-    cl::Buffer buf_oc12r(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c12r);
-    krnl_rlf.setArg(9, buf_oc12r);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc12r, false, 0, sizeof(float) * total_len,
-                            outC12r);
-
-    cl::Buffer buf_oc13r(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c13r);
-    krnl_rlf.setArg(9, buf_oc13r);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc13r, false, 0, sizeof(float) * total_len,
-                            outC13r);
-
-    cl::Buffer buf_oc23r(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c23r);
-    krnl_rlf.setArg(9, buf_oc23r);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc23r, false, 0, sizeof(float) * total_len,
-                            outC23r);
-
-    cl::Buffer buf_oc12i(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c12i);
-    krnl_rlf.setArg(9, buf_oc12i);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc12i, false, 0, sizeof(float) * total_len,
-                            outC12i);
-
-    cl::Buffer buf_oc13i(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c13i);
-    krnl_rlf.setArg(9, buf_oc13i);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc13i, false, 0, sizeof(float) * total_len,
-                            outC13i);
-
-    cl::Buffer buf_oc23i(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c23i);
-    krnl_rlf.setArg(9, buf_oc23i);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc23i, false, 0, sizeof(float) * total_len,
-                            outC23i);
+    for (auto idx = 0; idx < MatSize; idx++) {
+      krnl_filter.setArg(8, buf_inputs[idx]);
+      krnl_filter.setArg(9, buf_outputs[idx]);
+      queue.enqueueNDRangeKernel(krnl_filter, cl::NullRange, global_size,
+                                 group_size);
+      queue.enqueueReadBuffer(buf_outputs[idx], false, 0,
+                              sizeof(TData) * total_len, outputs[idx]);
+    }
 
     queue.finish();
-
   } catch (cl::Error &e) {
     return e.err();
   }
   return 0;
 }
 
-int RefinedLeeFilter2x2(int nLooks, int height, int width, const float *c11,
+int RefinedLeeFilting3f(int lookNum, int rows, int cols, const float *c11,
+                        const float *c22, const float *c33, const float *c12r,
+                        const float *c13r, const float *c23r, const float *c12i,
+                        const float *c13i, const float *c23i, float *outC11,
+                        float *outC22, float *outC33, float *outC12r,
+                        float *outC13r, float *outC23r, float *outC12i,
+                        float *outC13i, float *outC23i) {
+  const array input{c11, c22, c33, c12r, c13r, c23r, c12i, c13i, c23i};
+  const array output{outC11,  outC22,  outC33,  outC12r, outC13r,
+                     outC23r, outC12i, outC13i, outC23i};
+  return refined_lee_filter<float, 3>(lookNum, rows, cols, input, output);
+}
+
+int RefinedLeeFilting3d(int lookNum, int rows, int cols, const double *c11,
+                        const double *c22, const double *c33,
+                        const double *c12r, const double *c13r,
+                        const double *c23r, const double *c12i,
+                        const double *c13i, const double *c23i, double *outC11,
+                        double *outC22, double *outC33, double *outC12r,
+                        double *outC13r, double *outC23r, double *outC12i,
+                        double *outC13i, double *outC23i) {
+  const array input{c11, c22, c33, c12r, c13r, c23r, c12i, c13i, c23i};
+  const array output{outC11,  outC22,  outC33,  outC12r, outC13r,
+                     outC23r, outC12i, outC13i, outC23i};
+  return refined_lee_filter<double, 3>(lookNum, rows, cols, input, output);
+}
+
+int RefinedLeeFilting2f(int lookNum, int rows, int cols, const float *c11,
                         const float *c22, const float *c12r, const float *c12i,
                         float *outC11, float *outC22, float *outC12r,
                         float *outC12i) {
-  try {
-    cl::Context context = cl::Context::getDefault();
-    cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
-    cl::CommandQueue queue(context);
+  const array input{c11, c22, c12r, c12i};
+  const array output{outC11, outC22, outC12r, outC12i};
+  return refined_lee_filter<float, 2>(lookNum, rows, cols, input, output);
+}
 
-    // Compile the program
-    cl::Program program(context, src_rlf_kernel);
-    program.build(device, "-cl-std=CL2.0");
-
-    // Prepare to execute the kernel
-    auto total_len = height * width;
-    cl::NDRange global_size(height, width);
-
-    auto max_size = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-    auto group_height = int_sqrt(max_size);
-    cl::NDRange group_size(group_height, group_height);
-
-    // Create buffers
-    cl::Buffer buf_c11(context, c11, c11 + total_len, true);
-    cl::Buffer buf_c22(context, c22, c22 + total_len, true);
-    cl::Buffer buf_c12r(context, c12r, c12r + total_len, true);
-    cl::Buffer buf_c12i(context, c12i, c12i + total_len, true);
-    cl::Buffer buf_span(context, CL_MEM_READ_WRITE, sizeof(float) * total_len);
-
-    // We use the first device to calculate SPAN
-    cl::Kernel krnl_getspan(program, "mat_add2");
-    krnl_getspan.setArg(0, buf_span);
-    krnl_getspan.setArg(1, buf_c11);
-    krnl_getspan.setArg(2, buf_c22);
-    queue.enqueueNDRangeKernel(krnl_getspan, cl::NullRange, global_size);
-
-    // Now we can start filting process
-    cl::Kernel krnl_rlf(program, "filt_cij");
-    krnl_rlf.setArg(0, buf_span);
-    krnl_rlf.setArg(1, height);
-    krnl_rlf.setArg(2, width);
-
-    auto shared_height = static_cast<int>(group_height) + 8;
-    krnl_rlf.setArg(3, sizeof(float) * shared_height * shared_height, nullptr);
-    krnl_rlf.setArg(4, shared_height);
-    krnl_rlf.setArg(5, shared_height);
-
-    cl::Buffer buf_prwt(context, Prewitt.begin(), Prewitt.end(), true);
-    krnl_rlf.setArg(6, buf_prwt);
-    krnl_rlf.setArg(7, nLooks);
-
-    // For every channel
-    cl::Buffer buf_oc11(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c11);
-    krnl_rlf.setArg(9, buf_oc11);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc11, false, 0, sizeof(float) * total_len,
-                            outC11);
-
-    cl::Buffer buf_oc22(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c22);
-    krnl_rlf.setArg(9, buf_oc22);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc22, false, 0, sizeof(float) * total_len,
-                            outC22);
-
-    cl::Buffer buf_oc12r(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c12r);
-    krnl_rlf.setArg(9, buf_oc12r);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc12r, false, 0, sizeof(float) * total_len,
-                            outC12r);
-
-    cl::Buffer buf_oc12i(context, CL_MEM_WRITE_ONLY, sizeof(float) * total_len);
-    krnl_rlf.setArg(8, buf_c12i);
-    krnl_rlf.setArg(9, buf_oc12i);
-    queue.enqueueNDRangeKernel(krnl_rlf, cl::NullRange, global_size, group_size);
-    queue.enqueueReadBuffer(buf_oc12i, false, 0, sizeof(float) * total_len,
-                            outC12i);
-
-    queue.finish();
-
-  } catch (cl::Error &e) {
-    return e.err();
-  }
-  return 0;
+int RefinedLeeFilting2d(int lookNum, int rows, int cols, const double *c11,
+                        const double *c22, const double *c12r,
+                        const double *c12i, double *outC11, double *outC22,
+                        double *outC12r, double *outC12i) {
+  const array input{c11, c22, c12r, c12i};
+  const array output{outC11, outC22, outC12r, outC12i};
+  return refined_lee_filter<double, 2>(lookNum, rows, cols, input, output);
 }

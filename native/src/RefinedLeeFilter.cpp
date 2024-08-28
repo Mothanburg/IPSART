@@ -83,13 +83,6 @@ constexpr array<TData, 7 * 7 * 8> Prewitt {
 };
 // clang-format on
 
-template <typename IntTy>
-  requires std::is_integral_v<IntTy>
-inline IntTy int_sqrt(IntTy x) {
-  auto res = std::sqrt(static_cast<long double>(x));
-  return static_cast<IntTy>(std::round(res));
-}
-
 template <typename TData, int Dim>
 static int refined_lee_filter(int lookNum, int rows, int cols,
                               const array<const TData *, Dim * Dim> &inputs,
@@ -105,14 +98,14 @@ static int refined_lee_filter(int lookNum, int rows, int cols,
       program.build(device, "-cl-std=CL2.0");
     } else {
       /* TData is double */
-      program.build(device, "-cl-std=CL2.0 -cl-fp64 -DENABLE_FP64");
+      program.build(device, "-cl-std=CL2.0 -DENABLE_FP64");
     }
 
     int total_len = rows * cols;
     cl::NDRange global_size(rows, cols);
 
-    auto max_size = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-    auto group_height = int_sqrt(max_size);
+    size_t max_size = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+    auto group_height = static_cast<size_t>(floor(sqrt(static_cast<double>(max_size))));
     cl::NDRange group_size(group_height, group_height);
 
     array<cl::Buffer, Dim * Dim> buf_inputs, buf_outputs;
@@ -134,7 +127,7 @@ static int refined_lee_filter(int lookNum, int rows, int cols,
       krnl_span_calc.setArg(0, buf_inputs[0]);
       krnl_span_calc.setArg(1, buf_inputs[1]);
       krnl_span_calc.setArg(2, buf_inputs[2]);
-      krnl_span_calc.setArg(3, buf_inputs);
+      krnl_span_calc.setArg(3, buf_span);
     }
 
     cl::Kernel krnl_filter(program, "page_filting");
@@ -142,10 +135,10 @@ static int refined_lee_filter(int lookNum, int rows, int cols,
     krnl_filter.setArg(1, cols);
     krnl_filter.setArg(2, buf_span);
 
-    auto shm_size = group_height + 8;
+    auto shm_size = static_cast<int>(group_height) + 8;
     krnl_filter.setArg(3, shm_size);
     krnl_filter.setArg(4, shm_size);
-    krnl_filter.setArg(5, sizeof(TData) * shm_size * shm_size);
+    krnl_filter.setArg(5, sizeof(TData) * shm_size * shm_size, nullptr);
 
     cl::Buffer buf_prwt(context, Prewitt<TData>.begin(), Prewitt<TData>.end(),
                         true);

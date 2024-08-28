@@ -1,6 +1,7 @@
 // Convention: Leading dimension is dim 0, and data storage is row-major
 #ifdef ENABLE_FP64
 #define dtype double
+#pragma OPENCL EXTENSION cl_khr_fp64:enable
 #else
 #define dtype float
 #endif
@@ -14,7 +15,7 @@ multilook(int input_cols, __global const dtype *input,
     int col_out = get_global_id(1);
 
     int row_in = row_out * row_look;
-    int col_in = cow_out * col_look;
+    int col_in = col_out * col_look;
 
     dtype sum = 0.0;
     for (int dr = 0; dr < row_look; dr++)

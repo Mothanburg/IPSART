@@ -9,9 +9,8 @@
 using namespace std;
 
 template <typename TData>
-static int multilook(int rowLook, int colLook, int inRows, int inCols,
-                     const TData *input, int outRows, int outCols,
-                     TData *output) {
+static int multilook(int inRows, int inCols, const TData *input, int rowLook,
+                     int colLook, int outRows, int outCols, TData *output) {
   try {
     cl::Context context = cl::Context::getDefault();
     cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
@@ -23,13 +22,13 @@ static int multilook(int rowLook, int colLook, int inRows, int inCols,
       program.build(device, "-cl-std=CL2.0");
     } else {
       /* TData is double */
-      program.build(device, "-cl-std=CL2.0 -cl-fp64 -DENABLE_FP64");
+      program.build(device, "-cl-std=CL2.0 -DENABLE_FP64");
     }
 
     // Create buffers
     cl::Buffer buf_input(context, input, input + (inRows * inCols), true);
     cl::Buffer buf_output(context, CL_MEM_WRITE_ONLY,
-                          sizeof(float) * outRows * outCols);
+                          sizeof(TData) * outRows * outCols);
 
     // Prepare to execute the kernel
     cl::NDRange global_size(outRows, outCols);
@@ -44,7 +43,7 @@ static int multilook(int rowLook, int colLook, int inRows, int inCols,
     queue.enqueueNDRangeKernel(krnl, cl::NullRange, global_size);
 
     queue.enqueueReadBuffer(buf_output, false, 0,
-                            sizeof(float) * outRows * outCols, output);
+                            sizeof(TData) * outRows * outCols, output);
 
     queue.finish();
   } catch (cl::Error &e) {
@@ -53,14 +52,14 @@ static int multilook(int rowLook, int colLook, int inRows, int inCols,
   return 0;
 }
 
-int Multilookf(int rowLook, int colLook, int inRows, int inCols,
-               const float *input, int outRows, int outCols, float *output) {
-  return multilook(rowLook, colLook, inRows, inCols, input, outRows, outCols,
+int Multilookf(int inRows, int inCols, const float *input, int rowLook,
+               int colLook, int outRows, int outCols, float *output) {
+  return multilook(inRows, inCols, input, rowLook, colLook, outRows, outCols,
                    output);
 }
 
-int Multilookd(int rowLook, int colLook, int inRows, int inCols,
-               const double *input, int outRows, int outCols, double *output) {
-  return multilook(rowLook, colLook, inRows, inCols, input, outRows, outCols,
+int Multilookd(int inRows, int inCols, const double *input, int rowLook,
+               int colLook, int outRows, int outCols, double *output) {
+  return multilook(inRows, inCols, input, rowLook, colLook, outRows, outCols,
                    output);
 }

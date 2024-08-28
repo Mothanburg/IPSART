@@ -12,56 +12,79 @@ if in_rows < rowLook || in_cols < colLook
     error("The image size must be bigger than look numbers.")
 end
 
-% We drop the last rows and cols whose length is less than look number.
+global gars_mtlk_cpu_enable
+if isempty(gars_mtlk_cpu_enable)
+    gars_mtlk_cpu_enable = true;
+end
 
-global GARS_CONFIG
-
-if GARS_CONFIG.CAPABILITY >= 1 && class(image) == "single" ...
-        && numel(image) > 400000
-
+if gars_mtlk_cpu_enable
     try
-        if ~isreal(image)
-            [errno,r_part] = clib.gars.Multilook(real(image), rowLook, ...
-                colLook, fix(in_rows / rowLook), fix(in_cols / colLook));
-            if errno ~= 0
-                error("error number %d is returned.", errno);
-            end
-
-            [errno,i_part] = clib.gars.Multilook(imag(image), rowLook, ...
-                colLook, fix(in_rows / rowLook), fix(in_cols / colLook));
-            if errno ~= 0
-                error("error number %d is returned.", errno);
-            end
-            
-            result = r_part + 1i * i_part;
-        else
-            [errno,result] = clib.gars.Multilook(image, rowLook, colLook, ...
-                fix(in_rows / rowLook), fix(in_cols / colLook));
-            if errno ~= 0
-                error("error number %d is returned.", errno);
-            end
-        end
-
+        result = MTLK_native(image, in_rows, in_cols, rowLook, colLook);
         return;
     catch e
-        warning(e.identifier, "An error occurred when calling library, " + ...
-            "fallback to matlab.\n" + ...
+        warning(e.identifier, ...
+            "An error occurred when calling library, fallback to matlab\n" + ...
             "        Error message: %s", e.message);
+        gars_mtlk_cpu_enable = false;
     end
 end
 
-result = multlk_matlab(image, in_rows, in_cols, rowLook, colLook);
+result = MTLK_matlab(image, in_rows, in_cols, rowLook, colLook);
 
 end
 
 
-function result = multlk_matlab(image, in_rows, in_cols, rowLook, colLook)
+%---------- native function caller ----------%
 
-row_strides = repmat(rowLook, 1, floor(in_rows / rowLook));
-row_left = rem(in_rows, rowLook);
+function result = MTLK_native(image, in_rows, in_cols, row_look, col_look)
 
-col_strides = repmat(colLook, 1, floor(in_cols / colLook));
-col_left = rem(in_cols, colLook);
+out_rows = fix(in_rows / row_look);
+out_cols = fix(in_cols / col_look);
+
+if ~isreal(image)
+    if class(image) == "double"
+        [errno1,rpart] = clib.gars.Multilookd(real(image), row_look, ...
+            col_look, out_rows, out_cols);
+        [errno2,ipart] = clib.gars.Multilookd(imag(image), row_look, ...
+            col_look, out_rows, out_cols);
+    else
+        [errno1,rpart] = clib.gars.Multilookf(real(image), row_look, ...
+            col_look, out_rows, out_cols);
+        [errno2,ipart] = clib.gars.Multilookf(imag(image), row_look, ...
+            col_look, out_rows, out_cols);
+    end
+
+    if errno1 ~= 0 || errno2 ~= 0
+        error("error number %d and %d is returned.", errno1, errno2);
+    end
+
+    result = rpart + 1i * ipart;
+else
+    if class(image) == "double"
+        [errno,result] = clib.gars.Multilookd(image, row_look, col_look, ...
+            out_rows, out_cols);
+    else
+        [errno,result] = clib.gars.Multilookf(image, row_look, col_look, ...
+            out_rows, out_cols);
+    end
+
+    if errno ~= 0
+        error("error number %d is returned.", errno);
+    end
+end
+
+end
+
+
+%---------- MATLAB function caller ----------%
+
+function result = MTLK_matlab(image, in_rows, in_cols, row_look, col_look)
+
+row_strides = repmat(row_look, 1, floor(in_rows / row_look));
+row_left = rem(in_rows, row_look);
+
+col_strides = repmat(col_look, 1, floor(in_cols / col_look));
+col_left = rem(in_cols, col_look);
 
 patched = mat2cell(image(1:end-row_left,1:end-col_left), ...
     row_strides, col_strides);

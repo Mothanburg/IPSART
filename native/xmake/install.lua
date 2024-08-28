@@ -2,10 +2,6 @@ import("core.project.config")
 
 -- install GaRS native library
 function main(target)
-        if not is_mode("release", "releasedbg", "minsizerel") then
-            local curmode = get_config("mode")
-            raise("please change mode '%s' to a kind of release mode.", curmode)
-        end
 
         local installdir = target:installdir()
 
@@ -63,7 +59,6 @@ function _gen_matlab_interface_generator(target, installdir)
         file:print("    PackageName=\"gars\", ...")
         file:print("    CLinkage=true, ...")
         file:print(format("    OutputFolder=\"%s\", ...", path.join(os.projectdir(), config:buildir())))
-        file:print("    OverwriteExistingDefinitionFiles=true, ...")
         file:print("    Verbose=true ...")
         file:print(");")
         file:print("% Please Edit the define script by the instructions in the file.")

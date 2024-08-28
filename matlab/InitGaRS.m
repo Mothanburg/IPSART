@@ -6,12 +6,7 @@ arguments
 end
 
 % Create the basic config of the GaRS library.
-global GARS_CONFIG;
-GARS_CONFIG = struct();
-
 [root,~,~] = fileparts(mfilename("fullpath"));
-
-GARS_CONFIG.GaRSRoot = root;
 
 % Import function packages.
 try
@@ -23,48 +18,19 @@ catch e
     rethrow(e);
 end
 
-GARS_CONFIG.ImportedPackages = options.imports;
-
-% Check the existence of the native library.
-libpath = fullfile(root, "bin");
-if exist(libpath, "dir")
-    addpath(libpath);
-    % For safety, we use out-of-process execution mode (if we can)
-    if ~isMATLABReleaseOlderThan("R2023a")
-        GARS_CONFIG.CLIB = clibConfiguration("gars", "ExecutionMode", "outofprocess");
-    end
-    % Test gpu capability
-    GARS_CONFIG.CAPABILITY = 2;
-    try       
-        errno = clib.gars.GaRSTestOpenCL();
-
-        if ~options.enableGPU || errno ~= 0
-            GARS_CONFIG.CAPABILITY = 1; % The platform can only use CPU
-        end
-    catch
-        GARS_CONFIG.CAPABILITY = 0;     % No native library capability
-        rmpath(libpath);
-    end
-else
-    GARS_CONFIG.CAPABILITY = 0;
+% Using out-of-process mode for safety
+addpath(fullfile(root, "bin"));
+if ~isMATLABReleaseOlderThan("R2023a")
+    clibConfiguration("gars", "ExecutionMode", "outofprocess");
 end
-
-% Start parallel pool
-% GARS_CONFIG.POOL = parpool();
-
-
-GARS_CONFIG.CAUTION= "This struct is crucial for the GaRS library, " + ...
-    "DO NOT modify or clear it.";
 
 % ------------- You can ONLY edit the part below ------------- %
 
-% Set function alias.
+% Set function alias
 assignin("base", "LS1PH", @(x) HistStretch(x, "Linear Percent", 0, 99));
 assignin("base", "LS2PH", @(x) HistStretch(x, "Linear Percent", 0, 98));
 assignin("base", "LS5PH", @(x) HistStretch(x, "Linear Percent", 0, 95));
 assignin("base", "LSOPT", @(x) HistStretch(x, "Optimized Linear"));
-
-% ------------- You can ONLY edit the part above ------------- %
 
 end
 

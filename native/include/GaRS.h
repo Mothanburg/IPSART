@@ -19,12 +19,12 @@ extern "C" {
 /*------------------------ BASIC FIlTERING ------------------------*/
 
 // Multilook
-GARS_API int Multilookf(int rowLook, int colLook,
-                        int inRows, int inCols, const float *input,
+GARS_API int Multilookf(int inRows, int inCols, const float *input,
+                        int rowLook, int colLook,
                         int outRows, int outCols, float *output);
 
-GARS_API int Multilookd(int rowLook, int colLook,
-                        int inRows, int inCols, const double *input,
+GARS_API int Multilookd(int inRows, int inCols, const double *input,
+                        int rowLook, int colLook,
                         int outRows, int outCols, double *output);
 
 

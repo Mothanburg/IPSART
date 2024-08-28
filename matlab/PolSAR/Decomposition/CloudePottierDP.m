@@ -4,6 +4,45 @@ arguments
     M2 PolM2
 end
 
+global gars_cp2_cpu_enable
+if isempty(gars_cp2_cpu_enable)
+    gars_cp2_cpu_enable = true;
+end
+
+if gars_cp2_cpu_enable
+    try
+        [H,alpha,A] = CP2_native(M2);
+        return;
+    catch e
+        warning(e.identifier, ...
+            "An error occurred when calling library, fallback to matlab\n" + ...
+            "        Error message: %s", e.message);
+        gars_cp2_cpu_enable = false;
+    end
+end
+
+[H,alpha,A] = CP2_matlab(M2);
+
+end
+
+
+%---------- native function caller ----------%
+
+function [H,alpha,A] = CP2_native(M2)
+
+if M2.Dtype == "double"
+    [H,alpha,A] = clib.gars.CloudePottier2d(M2.m11, M2.m22, M2.m12_r, M2.m12_i);
+else
+    [H,alpha,A] = clib.gars.CloudePottier2f(M2.m11, M2.m22, M2.m12_r, M2.m12_i);
+end
+
+end
+
+
+%---------- MATLAB function caller ----------%
+
+function [H,alpha,A] = CP2_matlab(M2)
+
 height = M2.Height;
 width = M2.Width;
 

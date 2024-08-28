@@ -1,12 +1,10 @@
 function UnloadGaRS
 
-rehash("path");
-
-global GARS_CONFIG
+clear global;
 if ~isMATLABReleaseOlderThan("R2023a")
-    GARS_CONFIG.CLIB.unload();
+    clibConfiguration("gars").unload()
 end
 
-clear GARS_CONFIG;
+rehash("path");
 
 end

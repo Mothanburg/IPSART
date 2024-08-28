@@ -4,22 +4,44 @@ arguments
     C3 PolC3
 end
 
-global GARS_CONFIG
+global gars_ymg_cpu_enable
+if isempty(gars_ymg_cpu_enable)
+    gars_ymg_cpu_enable = true;
+end
 
-if GARS_CONFIG.CAPABILITY > 0
+if gars_ymg_cpu_enable
     try
-        [Ps,Pd,Pv,Ph] = clib.gars.Yamaguchi(C3.m11, C3.m22, C3.m33, C3.m12_r, C3.m13_r, ...
-            C3.m23_r, C3.m12_i, C3.m13_i, C3.m23_i);
-        return
+        [Ps,Pd,Pv,Ph] = Ymg_native(C3);
+        return;
     catch e
-        warning(e.identifier, "An error occurred when calling library, fallback to matlab.\n" + ...
-            "    Error message: %s", e.message);
+        warning(e.identifier, ...
+            "An error occurred when calling library, fallback to matlab\n" + ...
+            "        Error message: %s", e.message);
+        gars_ymg_cpu_enable = false;
     end
 end
 
 [Ps,Pd,Pv,Ph] = Ymg_matlab(C3);
 
 end
+
+
+%---------- Native function caller ----------%
+
+function [Ps,Pd,Pv,Ph] = Ymg_native(C3)
+
+if C3.Dtype == "double"
+    [Ps,Pd,Pv,Ph] = clib.gars.Yamaguchid(C3.m11, C3.m22, C3.m33, C3.m12_r, ...
+        C3.m13_r, C3.m23_r, C3.m12_i, C3.m13_i, C3.m23_i);
+else
+    [Ps,Pd,Pv,Ph] = clib.gars.Yamaguchif(C3.m11, C3.m22, C3.m33, C3.m12_r, ...
+        C3.m13_r, C3.m23_r, C3.m12_i, C3.m13_i, C3.m23_i);
+end
+
+end
+
+
+%---------- MATLAB function caller ----------%
 
 function [Ps,Pd,Pv,Ph] = Ymg_matlab(C3)
 

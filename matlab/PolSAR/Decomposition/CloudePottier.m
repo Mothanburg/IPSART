@@ -1,25 +1,29 @@
 % Cloude-Pottier H/a/A decomposition
-function [H,alpha,A] = CloudePottier(M3, options)
+function [H,alpha,A] = CloudePottier(M3)
 
 arguments
     M3 PolM3
-    options.quiet logical = false
 end
 
-if ~options.quiet && ~isa(M3, "PolT3")
-    warning("The input data is not the coherency matrix T, the returned alpha may not make sense");
+if ~isa(M3, "PolT3")
+    warning("The input data is not the coherency matrix T, " + ...
+        "the returned alpha may not make sense");
 end
 
-global GARS_CONFIG
+global gars_cp_cpu_enable
+if isempty(gars_cp_cpu_enable)
+    gars_cp_cpu_enable = true;
+end
 
-if GARS_CONFIG.CAPABILITY > 0
+if gars_cp_cpu_enable
     try
-        [H,alpha,A] = clib.gar0s.CloudePottier(M3.m11, M3.m22, M3.m33, M3.m12_r, ...
-            M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
-        return
+        [H,alpha,A] = CP_native(M3);
+        return;
     catch e
-        warning(e.identifier, "An error occurred when calling library, fallback to matlab.\n" + ...
+        warning(e.identifier, ...
+            "An error occurred when calling library, fallback to matlab\n" + ...
             "        Error message: %s", e.message);
+        gars_cp_cpu_enable = false;
     end
 end
 
@@ -27,6 +31,23 @@ end
 
 end
 
+
+%---------- Native function caller ----------%
+
+function [H,alpha,A] = CP_native(M3)
+
+if M3.Dtype == "double"
+    [H,alpha,A] = clib.gars.CloudePottier3d(M3.m11, M3.m22, M3.m33, ...
+        M3.m12_r, M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
+else
+    [H,alpha,A] = clib.gars.CloudePottier3f(M3.m11, M3.m22, M3.m33, ...
+        M3.m12_r, M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
+end
+
+end
+
+
+%---------- MATLAB function caller ----------%
 
 function [H,alpha,A] = CP_matlab(M3)
 

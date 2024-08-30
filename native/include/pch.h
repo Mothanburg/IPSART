@@ -7,7 +7,6 @@
 #include <complex>
 #include <concepts>
 #include <numbers>
-#include <span>
 #include <type_traits>
 
 #define EIGEN_USE_BLAS

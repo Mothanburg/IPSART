@@ -19,22 +19,22 @@ struct PolMatView<TData, 2> {
              const TData *t12r, const TData *t12i)
       : Rows(rows),
         Cols(cols),
-        m11(t11, rows * cols),
-        m22(t22, rows * cols),
-        m12r(t12r, rows * cols),
-        m12i(t12i, rows * cols) {}
+        m_11(t11),
+        m_22(t22),
+        m_12r(t12r),
+        m_12i(t12i) {}
 
   TMat at(int idx) const {
     TMat m;
-    m << TComplex(m11[idx]), TComplex(m12r[idx], m12i[idx]),
-        TComplex(m12r[idx], -m12i[idx]), TComplex(m22[idx]);
+    m << TComplex(m_11[idx]), TComplex(m_12r[idx], m_12i[idx]),
+        TComplex(m_12r[idx], -m_12i[idx]), TComplex(m_22[idx]);
     return m;
   }
 
   TMat at(int row, int col) const { return this->at(Cols * row + col); }
 
   int Rows, Cols;
-  std::span<const TData> m11, m22, m12r, m12i;
+  const TData *m_11, *m_22, *m_12r, *m_12i;
 };
 
 template <typename TData>
@@ -49,30 +49,30 @@ struct PolMatView<TData, 3> {
              const TData *t23i)
       : Rows(rows),
         Cols(cols),
-        m11(t11, rows * cols),
-        m22(t22, rows * cols),
-        m33(t33, rows * cols),
-        m12r(t12r, rows * cols),
-        m13r(t13r, rows * cols),
-        m23r(t23r, rows * cols),
-        m12i(t12i, rows * cols),
-        m13i(t13i, rows * cols),
-        m23i(t23i, rows * cols) {}
+        m_11(t11),
+        m_22(t22),
+        m_33(t33),
+        m_12r(t12r),
+        m_13r(t13r),
+        m_23r(t23r),
+        m_12i(t12i),
+        m_13i(t13i),
+        m_23i(t23i) {}
 
   TMat at(int idx) const {
     TMat m;
-    m << TComplex(m11[idx]), TComplex(m12r[idx], m12i[idx]),
-        TComplex(m13r[idx], m13i[idx]), TComplex(m12r[idx], -m12i[idx]),
-        TComplex(m22[idx]), TComplex(m23r[idx], m23i[idx]),
-        TComplex(m13r[idx], -m13i[idx]), TComplex(m23r[idx], -m23i[idx]),
-        TComplex(m33[idx]);
+    m << TComplex(m_11[idx]), TComplex(m_12r[idx], m_12i[idx]),
+        TComplex(m_13r[idx], m_13i[idx]), TComplex(m_12r[idx], -m_12i[idx]),
+        TComplex(m_22[idx]), TComplex(m_23r[idx], m_23i[idx]),
+        TComplex(m_13r[idx], -m_13i[idx]), TComplex(m_23r[idx], -m_23i[idx]),
+        TComplex(m_33[idx]);
     return m;
   }
 
   TMat at(int row, int col) const { return this->at(Cols * row + col); }
 
   int Rows, Cols;
-  std::span<const TData> m11, m22, m33, m12r, m13r, m23r, m12i, m13i, m23i;
+  const TData *m_11, *m_22, *m_33, *m_12r, *m_13r, *m_23r, *m_12i, *m_13i, *m_23i;
 };
 
 #endif

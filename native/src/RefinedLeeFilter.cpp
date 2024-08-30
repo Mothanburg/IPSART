@@ -122,12 +122,16 @@ static int refined_lee_filter(int lookNum, int rows, int cols,
       krnl_span_calc.setArg(0, buf_inputs[0]);
       krnl_span_calc.setArg(1, buf_inputs[1]);
       krnl_span_calc.setArg(2, buf_span);
+      queue.enqueueNDRangeKernel(krnl_span_calc, cl::NullRange, global_size,
+                                 group_size);
     } else {
       cl::Kernel krnl_span_calc(program, "span_calc3");
       krnl_span_calc.setArg(0, buf_inputs[0]);
       krnl_span_calc.setArg(1, buf_inputs[1]);
       krnl_span_calc.setArg(2, buf_inputs[2]);
       krnl_span_calc.setArg(3, buf_span);
+      queue.enqueueNDRangeKernel(krnl_span_calc, cl::NullRange, global_size,
+                                 group_size);
     }
 
     cl::Kernel krnl_filter(program, "page_filting");

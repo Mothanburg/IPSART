@@ -97,7 +97,8 @@ w1 = [-1,0,1;-1,0,1;-1,0,1];
 w2 = [0,1,1;-1,0,1;-1,-1,0];
 w3 = [1,1,1;0,0,0;-1,-1,-1];
 w4 = [1,1,0;1,0,-1;0,-1,-1];
-W = parallel.pool.Constant(cat(3, w1, w2, w3, w4, fliplr(w1), w2', flipud(w3), flipud(w2)));
+W = parallel.pool.Constant( ...
+    cat(3, w1, w2, w3, w4, fliplr(w1), w2', flipud(w3), flipud(w2)));
 
 pw1 = repmat([0,0,0,1,1,1,1], [7,1]);
 pw2 = [1,1,1,1,1,1,1;
@@ -128,8 +129,8 @@ parfor col = 1:width
         window = zeros(7, 7, M.Value.Dtype);
         for i = 1:7
             for j = 1:7
-                r = min(max(row - 3 + i, 1), height);
-                c = min(max(col - 3 + j, 1), width);
+                r = min(max(row - 3 + i - 1, 1), height);
+                c = min(max(col - 3 + j - 1, 1), width);
                 window(i,j) = span.Value(r, c);
             end
         end
@@ -137,7 +138,8 @@ parfor col = 1:width
         meanmat = zeros(3, 3, M.Value.Dtype);
         for i = 1:3
             for j = 1:3
-                meanmat(i,j) = mean(window((1:3) + 2 * (i - 1),(1:3) + 2 * (j - 1)), "all");
+                meanmat(i,j) = mean( ...
+                    window((1:3) + 2 * (i - 1),(1:3) + 2 * (j - 1)), "all");
             end
         end
         [~,wid] = max(sum(meanmat .* W.Value, [1 2]));
@@ -188,8 +190,8 @@ parfor col = 1:width
         m_mean = cast(0, "like", cij.Value);
         for i = 1:7
             for j = 1:7
-                r = min(max(row - 3 + i, 1), height);
-                c = min(max(col - 3 + j, 1), width);
+                r = min(max(row - 3 + i - 1, 1), height);
+                c = min(max(col - 3 + j - 1, 1), width);
                 m_mean = m_mean + cij.Value(r, c) * pw(i, j);
             end
         end

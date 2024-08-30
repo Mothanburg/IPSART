@@ -1,20 +1,10 @@
 // Convention: Leading dimension is dim 0, and data storage is row-major
 #ifdef ENABLE_FP64
-#define dtype double
 #pragma OPENCL EXTENSION cl_khr_fp64:enable
+#define dtype double
 #else
 #define dtype float
 #endif
-
-int argmax(dtype *array, int len)
-{
-    int idx_max = 0;
-    for (int i = 1; i < len; i++)
-    {
-        idx_max += isless(array[idx_max], array[i]) * (i - idx_max);
-    }
-    return idx_max;
-}
 
 __kernel void
 span_calc2(__global const dtype *c11,
@@ -79,69 +69,24 @@ page_filting(int rows, int cols,
                     mean_mat[i * 3 + j] += shared_mem[lr * shared_cols + lc];
                 }
             }
-            // mean_mat[i * 3 + j] /= 9.0; // This line can be unnecessary.
         }
     }
 
-    dtype sums[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    dtype sums[8];
+    sums[0] = mean_mat[2] + mean_mat[5] + mean_mat[8] - mean_mat[0] - mean_mat[3] - mean_mat[6];
+    sums[1] = mean_mat[1] + mean_mat[2] + mean_mat[5] - mean_mat[3] - mean_mat[6] - mean_mat[7];
+    sums[2] = mean_mat[0] + mean_mat[1] + mean_mat[2] - mean_mat[6] - mean_mat[7] - mean_mat[8];
+    sums[3] = mean_mat[0] + mean_mat[1] + mean_mat[3] - mean_mat[5] - mean_mat[7] - mean_mat[8];
+    sums[4] = mean_mat[2] + mean_mat[5] + mean_mat[8] - mean_mat[0] - mean_mat[3] - mean_mat[6];
+    sums[5] = mean_mat[3] + mean_mat[6] + mean_mat[7] - mean_mat[1] - mean_mat[2] - mean_mat[5];
+    sums[6] = mean_mat[6] + mean_mat[7] + mean_mat[8] - mean_mat[0] - mean_mat[1] - mean_mat[2];
+    sums[7] = mean_mat[5] + mean_mat[7] + mean_mat[8] - mean_mat[0] - mean_mat[1] - mean_mat[3];
 
-    sums[0] -= mean_mat[0 * 3 + 0];
-    sums[0] += mean_mat[0 * 3 + 2];
-    sums[0] -= mean_mat[1 * 3 + 0];
-    sums[0] += mean_mat[1 * 3 + 2];
-    sums[0] -= mean_mat[2 * 3 + 0];
-    sums[0] += mean_mat[2 * 3 + 2];
-
-    sums[1] += mean_mat[0 * 3 + 1];
-    sums[1] += mean_mat[0 * 3 + 2];
-    sums[1] -= mean_mat[1 * 3 + 0];
-    sums[1] += mean_mat[1 * 3 + 2];
-    sums[1] -= mean_mat[2 * 3 + 0];
-    sums[1] -= mean_mat[2 * 3 + 1];
-
-    sums[2] += mean_mat[0 * 3 + 0];
-    sums[2] += mean_mat[0 * 3 + 1];
-    sums[2] += mean_mat[0 * 3 + 2];
-    sums[2] -= mean_mat[2 * 3 + 0];
-    sums[2] -= mean_mat[2 * 3 + 1];
-    sums[2] -= mean_mat[2 * 3 + 2];
-
-    sums[3] += mean_mat[0 * 3 + 0];
-    sums[3] += mean_mat[0 * 3 + 1];
-    sums[3] += mean_mat[1 * 3 + 0];
-    sums[3] -= mean_mat[1 * 3 + 2];
-    sums[3] -= mean_mat[2 * 3 + 1];
-    sums[3] -= mean_mat[2 * 3 + 2];
-
-    sums[4] += mean_mat[0 * 3 + 0];
-    sums[4] -= mean_mat[0 * 3 + 2];
-    sums[4] += mean_mat[1 * 3 + 0];
-    sums[4] -= mean_mat[1 * 3 + 2];
-    sums[4] += mean_mat[2 * 3 + 0];
-    sums[4] -= mean_mat[2 * 3 + 2];
-
-    sums[5] -= mean_mat[0 * 3 + 1];
-    sums[5] -= mean_mat[0 * 3 + 2];
-    sums[5] += mean_mat[1 * 3 + 0];
-    sums[5] -= mean_mat[1 * 3 + 2];
-    sums[5] += mean_mat[2 * 3 + 0];
-    sums[5] += mean_mat[2 * 3 + 1];
-
-    sums[6] -= mean_mat[0 * 3 + 0];
-    sums[6] -= mean_mat[0 * 3 + 1];
-    sums[6] -= mean_mat[0 * 3 + 2];
-    sums[6] += mean_mat[2 * 3 + 0];
-    sums[6] += mean_mat[2 * 3 + 1];
-    sums[6] += mean_mat[2 * 3 + 2];
-
-    sums[7] -= mean_mat[0 * 3 + 0];
-    sums[7] -= mean_mat[0 * 3 + 1];
-    sums[7] -= mean_mat[1 * 3 + 0];
-    sums[7] += mean_mat[1 * 3 + 2];
-    sums[7] += mean_mat[2 * 3 + 1];
-    sums[7] += mean_mat[2 * 3 + 2];
-
-    int window_id = argmax(sums, 8);
+    int window_id = 0;
+    __attribute__((opencl_unroll_hint)) for (int i = 1; i < 8; i++)
+    {
+        window_id += isless(sums[window_id],sums[i]) * (i - window_id);
+    }
 
     dtype z_mean = 0.0;
     __attribute__((opencl_unroll_hint)) for (int i = 0; i < 7; i++)

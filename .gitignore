@@ -36,6 +36,10 @@ octave-workspace
 # Xmake build directory
 build/
 
+# VS directories
+.vs*/
+vs*/
+
 # Auto generated file or dir
 autogen*
 

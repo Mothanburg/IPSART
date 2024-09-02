@@ -2,7 +2,7 @@ function InitGaRS(options)
 
 arguments
     options.imports(1,:) string = ["Utils", "Basic", "Data", "SAR", "PolSAR", "InSAR"]
-    options.enableGPU = true
+    options.debug = true
 end
 
 % Create the basic config of the GaRS library.
@@ -20,7 +20,7 @@ end
 
 % Using out-of-process mode for safety
 addpath(fullfile(root, "bin"));
-if ~isMATLABReleaseOlderThan("R2023a")
+if ~isMATLABReleaseOlderThan("R2023a") && options.debug
     clibConfiguration("gars", "ExecutionMode", "outofprocess");
 end
 

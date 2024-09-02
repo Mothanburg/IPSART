@@ -4,12 +4,12 @@ set_runtimes("MD")
 
 set_warnings("all")
 
-add_requires("eigen", "openblas", "openmp", "opencl")
+add_requires("eigen", "openmp", "opencl")
 
 target("GaRS")
     set_kind("shared")
 
-    add_packages("eigen", "openblas", "openmp", "opencl")
+    add_packages("eigen", "openmp", "opencl")
 
     set_languages("c++20")
     add_includedirs("include/", { public = true })

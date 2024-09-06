@@ -1,4 +1,4 @@
-function coh = CorrelationCoeff(master, slave, windowSize)
+function coh = IfgCoherence(master, slave, windowSize)
 
 window = ones(windowSize);
 

@@ -1,7 +1,7 @@
 function InitGaRS(options)
 
 arguments
-    options.imports(1,:) string = ["Utils", "Basic", "Data", "SAR", "PolSAR", "InSAR"]
+    options.imports(1,:) string = ["Utils", "Basic", "Data", "SAR", "PolSAR", "InSAR", "Geometric"]
     options.debug = true
 end
 

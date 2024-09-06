@@ -12,12 +12,12 @@ if in_rows < rowLook || in_cols < colLook
     error("The image size must be bigger than look numbers.")
 end
 
-global gars_mtlk_cpu_enable
-if isempty(gars_mtlk_cpu_enable)
-    gars_mtlk_cpu_enable = true;
+global gars_mtlk_gpu_enable
+if isempty(gars_mtlk_gpu_enable)
+    gars_mtlk_gpu_enable = true;
 end
 
-if gars_mtlk_cpu_enable
+if gars_mtlk_gpu_enable
     try
         result = MTLK_native(image, in_rows, in_cols, rowLook, colLook);
         return;
@@ -25,7 +25,7 @@ if gars_mtlk_cpu_enable
         warning(e.identifier, ...
             "An error occurred when calling library, fallback to matlab\n" + ...
             "        Error message: %s", e.message);
-        gars_mtlk_cpu_enable = false;
+        gars_mtlk_gpu_enable = false;
     end
 end
 

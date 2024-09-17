@@ -7,22 +7,20 @@
 #endif
 
 __kernel void
-span_calc2(__global const dtype *c11,
-           __global const dtype *c22,
-           __global dtype *span)
+span_calc(__global dtype *span,
+          __global const dtype *c11,
+          __global const dtype *c22
+#ifdef MAT_SIZE_3X3
+          , __global const dtype *c33
+#endif
+           )
 {
     int idx = get_global_id(0) * get_global_size(1) + get_global_id(1);
-    span[idx] = c11[idx] + c22[idx];
-}
-
-__kernel void
-span_calc3(__global const dtype *c11,
-           __global const dtype *c22,
-           __global const dtype *c33,
-           __global dtype *span)
-{
-    int idx = get_global_id(0) * get_global_size(1) + get_global_id(1);
-    span[idx] = c11[idx] + c22[idx] + c33[idx];
+    span[idx] = c11[idx] + c22[idx]
+#ifdef MAT_SIZE_3X3
+                + c33[idx]
+#endif
+    ;
 }
 
 // A 7x7 refined lee filter

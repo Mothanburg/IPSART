@@ -95,17 +95,26 @@ static int refined_lee_filter(int lookNum, int rows, int cols,
 
     cl::Program program(context, SRC_REFINEDLEEFILTER);
     if constexpr (is_same_v<TData, float>) {
-      program.build(device, "-cl-std=CL2.0");
+      if constexpr (Dim == 3) {
+        program.build(device, "-cl-std=CL2.0 -DMAT_SIZE_3X3");
+      } else {
+        program.build(device, "-cl-std=CL2.0");
+      }
     } else {
       /* TData is double */
-      program.build(device, "-cl-std=CL2.0 -DENABLE_FP64");
+      if constexpr (Dim == 3) {
+        program.build(device, "-cl-std=CL2.0 -DENABLE_FP64 -DMAT_SIZE_3X3");
+      } else {
+        program.build(device, "-cl-std=CL2.0 -DENABLE_FP64");
+      }
     }
 
     int total_len = rows * cols;
     cl::NDRange global_size(rows, cols);
 
     size_t max_size = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-    auto group_height = static_cast<size_t>(floor(sqrt(static_cast<double>(max_size))));
+    auto group_height =
+        static_cast<size_t>(floor(sqrt(static_cast<double>(max_size))));
     cl::NDRange group_size(group_height, group_height);
 
     array<cl::Buffer, Dim * Dim> buf_inputs, buf_outputs;
@@ -117,22 +126,15 @@ static int refined_lee_filter(int lookNum, int rows, int cols,
     }
 
     cl::Buffer buf_span(context, CL_MEM_READ_WRITE, sizeof(TData) * total_len);
-    if constexpr (Dim == 2) {
-      cl::Kernel krnl_span_calc(program, "span_calc2");
-      krnl_span_calc.setArg(0, buf_inputs[0]);
-      krnl_span_calc.setArg(1, buf_inputs[1]);
-      krnl_span_calc.setArg(2, buf_span);
-      queue.enqueueNDRangeKernel(krnl_span_calc, cl::NullRange, global_size,
-                                 group_size);
-    } else {
-      cl::Kernel krnl_span_calc(program, "span_calc3");
-      krnl_span_calc.setArg(0, buf_inputs[0]);
-      krnl_span_calc.setArg(1, buf_inputs[1]);
-      krnl_span_calc.setArg(2, buf_inputs[2]);
-      krnl_span_calc.setArg(3, buf_span);
-      queue.enqueueNDRangeKernel(krnl_span_calc, cl::NullRange, global_size,
-                                 group_size);
+    cl::Kernel krnl_span_calc(program, "span_calc");
+    krnl_span_calc.setArg(0, buf_span);
+    krnl_span_calc.setArg(1, buf_inputs[0]);
+    krnl_span_calc.setArg(2, buf_inputs[1]);
+    if constexpr (Dim == 3) {
+      krnl_span_calc.setArg(3, buf_inputs[2]);
     }
+    queue.enqueueNDRangeKernel(krnl_span_calc, cl::NullRange, global_size,
+                               group_size);
 
     cl::Kernel krnl_filter(program, "page_filting");
     krnl_filter.setArg(0, rows);

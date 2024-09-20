@@ -7,8 +7,8 @@ using namespace std;
 using namespace std::literals;
 
 template <typename TData, int Dim>
-static int yamaguchi(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
-                     TData *outPd, TData *outPv, TData *outPh) {
+static void yamaguchi(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
+                      TData *outPd, TData *outPv, TData *outPh) {
   using TComplex = PolMatView<TData, Dim>::TComplex;
   using TMat = PolMatView<TData, Dim>::TMat;
   using TArray =
@@ -17,7 +17,7 @@ static int yamaguchi(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
   constexpr TData sqrt2 = std::numbers::sqrt2_v<TData>;
 
   int len = pol_mat.Rows * pol_mat.Cols;
-#pragma omp parallel for
+# pragma omp parallel for
   for (auto idx = 0; idx < len; idx++) {
     TArray c = pol_mat.at(idx).array();
 

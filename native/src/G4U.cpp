@@ -15,7 +15,7 @@ static int g4u(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
   volatile bool err_flag{false};
 
   int len = pol_mat.Rows * pol_mat.Cols;
-#pragma omp parallel for
+# pragma omp parallel for
   for (auto idx = 0; idx < len; idx++) {
     TMat t0 = pol_mat.at(idx);
 
@@ -34,8 +34,8 @@ static int g4u(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
     }
     TData tp = t.trace().real();
 
-    TData fs, fd, fv, fh = abs(t(1, 2).imag()) * static_cast<TData>(2.0);
-
+    TData fs, fd, fv;
+    TData fh = abs(t(1, 2).imag()) * static_cast<TData>(2.0);
     TData c1 =
         t(0, 0).real() - t(1, 1).real() +
         t(2, 2).real() * static_cast<TData>(7.0) / static_cast<TData>(8.0) +

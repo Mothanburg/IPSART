@@ -1,6 +1,6 @@
-#include "utils.hpp"
-
 #include "GaRS.h"
+
+#include "utils.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -14,7 +14,7 @@ static void cloude_pottier(const PolMatView<TData, Dim> &pol_mat, TData *outH,
   constexpr TData PI = std::numbers::pi_v<TData>;
 
   int len = pol_mat.Rows * pol_mat.Cols;
-#pragma omp parallel for
+# pragma omp parallel for
   for (int idx = 0; idx < len; idx++) {
     const TMat t = pol_mat.at(idx);
 

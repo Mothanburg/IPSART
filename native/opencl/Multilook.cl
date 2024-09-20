@@ -1,7 +1,7 @@
 // Convention: Leading dimension is dim 0, and data storage is row-major
 #ifdef ENABLE_FP64
-#define dtype double
 #pragma OPENCL EXTENSION cl_khr_fp64:enable
+#define dtype double
 #else
 #define dtype float
 #endif

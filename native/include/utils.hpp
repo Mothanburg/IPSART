@@ -11,7 +11,6 @@ struct PolMatView;
 template <typename TData>
   requires std::is_same_v<TData, float> || std::is_same_v<TData, double>
 struct PolMatView<TData, 2> {
- public:
   using TComplex = std::complex<TData>;
   using TMat = Eigen::Matrix2<TComplex>;
 

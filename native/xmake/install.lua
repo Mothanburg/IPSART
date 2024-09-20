@@ -4,6 +4,9 @@ import("core.project.config")
 function main(target)
 
         local installdir = target:installdir()
+        if not os.exists(installdir) then
+            os.mkdir(installdir)
+        end
 
         -- install all shared libs of depended packages
         local installed = {}

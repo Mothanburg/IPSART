@@ -25,10 +25,7 @@ target("GaRS")
         add_defines("EIGEN_NO_DEBUG")
     end
 
-<<<<<<< Updated upstream
     set_installdir(path.join(os.projectdir(), "../matlab/bin/"))
-=======
->>>>>>> Stashed changes
     on_config("xmake/config")
     on_install("xmake/install")
 

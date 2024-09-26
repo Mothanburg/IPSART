@@ -40,11 +40,8 @@ build/
 .vs*/
 vs*/
 
-# Auto generated file or dir
-autogen*
-
 # binaries
-bin/
+bin/*
 
 # MacOS Cache
 .DS_Store

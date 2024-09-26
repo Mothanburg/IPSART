@@ -3,14 +3,7 @@ import("core.project.config")
 -- install GaRS native library
 function main(target)
 
-<<<<<<< Updated upstream
-        local installdir = target:installdir()
-        if not os.exists(installdir) then
-            os.mkdir(installdir)
-        end
-=======
-        local installdir = path.join(os.projectdir(), "..", "matlab", "bin")
->>>>>>> Stashed changes
+        local installdir = path.join(os.projectdir(), "matlab", "bin")
 
         -- install all shared libs of depended packages
         local installed = {}
@@ -36,7 +29,7 @@ function main(target)
             tgt_lib_file = string.gsub(tgt_file, "%.dll$", ".lib")
             os.cp(tgt_lib_file, installdir)
         end
-        print("You may need to run the bootstrap script in the '../matlab/bootstrap'.")
+        print("You may need to run the bootstrap script 'generate_matlab_interface.m' in the '../matlab/bootstrap'")
  
 end
 

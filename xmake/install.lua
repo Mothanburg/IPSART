@@ -4,7 +4,10 @@ import("core.project.config")
 function main(target)
 
         local installdir = path.join(os.projectdir(), "matlab", "bin")
-
+        if not os.exists(installdir) then
+            os.mkdir(installdir)
+        end
+        
         -- install all shared libs of depended packages
         local installed = {}
         for _, pkg in ipairs(target:orderpkgs()) do

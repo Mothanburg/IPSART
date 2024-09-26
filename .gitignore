@@ -41,7 +41,7 @@ build/
 vs*/
 
 # binaries
-bin/*
+bin/
 
 # MacOS Cache
 .DS_Store

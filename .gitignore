@@ -30,21 +30,8 @@ codegen/
 # Octave session info
 octave-workspace
 
-# Xmake cache
-.xmake/
-
-# Xmake build directory
-build/
-
-# VS and vscode directories
-.vs*/
-vs*/
-
-# caches
-.cache/
-
-# binaries
-bin/
-
 # MacOS Cache
 .DS_Store
+
+# Binaries
+bin/

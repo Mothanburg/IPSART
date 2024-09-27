@@ -23,8 +23,9 @@ clibgen.generateLibraryDefinition(...
 );
 
 
-%% Generate matlab interface library
+%% You may check the 'definegars.m' before runing this part;
 
+% Generate matlab interface library
 build(library_definition());
 
 copyfile("gars/garsInterface.dll", "../bin");

@@ -3,7 +3,7 @@ import("core.project.config")
 -- install GaRS native library
 function main(target)
 
-        local installdir = path.join(os.projectdir(), "matlab", "bin")
+        local installdir = path.join(os.projectdir(), "..", "bin")
         if not os.exists(installdir) then
             os.mkdir(installdir)
         end
@@ -18,7 +18,7 @@ function main(target)
                         if installed[libname] then
                             wprint("'%s' already exists, overwriting it.", libname)
                         end
-                        os.cp(libpath, installdir)
+                        os.vcp(libpath, installdir)
                         installed[libname] = true
                     end
                 end
@@ -30,9 +30,9 @@ function main(target)
         os.cp(tgt_file, installdir)
         if target:is_plat("windows") then
             tgt_lib_file = string.gsub(tgt_file, "%.dll$", ".lib")
-            os.cp(tgt_lib_file, installdir)
+            os.vcp(tgt_lib_file, installdir)
         end
-        print("You may need to run the bootstrap script 'generate_matlab_interface.m' in the '../matlab/bootstrap'")
+        print("You may need to run the bootstrap script 'generate_matlab_interface.m' in the '../bootstrap'")
  
 end
 

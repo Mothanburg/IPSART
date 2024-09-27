@@ -10,8 +10,9 @@ target("GaRS")
     add_packages("eigen", "openmp", "opencl")
 
     set_languages("c++20")
-    add_includedirs("include/", { public = true })
-    set_pcxxheader("include/pch.h")
+    add_includedirs("../include", { public = true })
+    add_includedirs("inc")
+    set_pcxxheader("inc/pch.h")
     add_files("src/*.cpp")
 
     add_cxxflags(
@@ -24,7 +25,6 @@ target("GaRS")
         add_defines("EIGEN_NO_DEBUG")
     end
 
-    set_installdir(path.join(os.projectdir(), "../matlab/bin/"))
     on_config("xmake/config")
     on_install("xmake/install")
 

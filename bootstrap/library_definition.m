@@ -8,7 +8,15 @@ function libDef = library_definition()
 libDef = clibgen.LibraryDefinition("garsData.xml");
 
 libDef.OutputFolder = ".";
-libDef.Libraries = "../bin/GaRS.lib";
+if ispc
+    libDef.Libraries = "../bin/GaRS.lib";
+else
+    if exist("../bin/GaRS.dylib", "file")
+       libDef.Libraries = "../bin/GaRS.dylib";
+    else
+       libDef.Libraries = "../bin/GaRS.so";
+    end
+end
 
 
 MultilookfDefinition = addFunction(libDef, ...

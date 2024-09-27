@@ -1,6 +1,6 @@
 %% Run this part to generate intermediate files
 
-header = "../../include/GaRS.h";
+header = "../include/GaRS.h";
 
 if ispc
     lib = "../bin/GaRS.lib";

@@ -1,3 +1,6 @@
+% Store data as ENVI data format
+% File name of stored data and its header file:
+%    "prefix/dataName" and "prefix/dataName.hdr"
 function data = StoreRSData(data, prefix, dataName, options)
 
 arguments
@@ -8,7 +11,6 @@ arguments
     options.useLowPrecision logical = false
 end
 
-% 根据需要创建文件夹
 if ~exist(prefix, "dir")
     mkdir(prefix);
 end
@@ -17,12 +19,10 @@ if ~endsWith(prefix, [filesep, "/"])
     prefix = strcat(prefix, filesep);
 end
 
-% 获取默认文件名
 if dataName == ""
     dataName = inputname(1);
 end
 
-% 写入文件
 filename = strcat(prefix, dataName, options.fileExt);
 if exist(filename, "file")
     warning("The file %s alread exists, overwriting it.", filename);
@@ -34,7 +34,7 @@ if ~isreal(data)
     if class(data) == "double" && ~options.useLowPrecision
         data_type = "complex64";
     else
-        % ENVI不支持非浮点数的复数类型
+        % ENVI doesn't support non-float complex number
         data_type = "complex32";
     end
     
@@ -97,10 +97,10 @@ switch data_type
     case "uint64"
         data_type_v = 15;
     otherwise
-        error('未知错误')
+        error('Unknown error')
 end
 
-% 写入头文件
+% Write header file
 fid = fopen(strcat(prefix, dataName, ".hdr"), "w");
 fprintf(fid, "ENVI\n");
 fprintf(fid, "bands = %d\n", bands);

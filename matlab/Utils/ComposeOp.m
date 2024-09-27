@@ -1,10 +1,10 @@
-function composed = ComposeOp(funcs)
+function composed = ComposeOp(unaries)
 
 arguments (Repeating)
-    funcs function_handle
+    unaries function_handle
 end
 
-composed = @(x) seq_call(x, funcs);
+composed = @(x) seq_call(x, unaries);
 
 end
 

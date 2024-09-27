@@ -1,7 +1,15 @@
 function InitGaRS(options)
 
 arguments
-    options.imports(1,:) string = ["Utils", "Basic", "Data", "SAR", "PolSAR", "InSAR", "Geometric"]
+    options.imports(1,:) string = [
+        "Utils", ...
+        "Basic", ...
+        "Data", ...
+        "SAR", ...
+        "PolSAR", ...
+        "InSAR", ...
+        "Geometric"...
+        ]
     options.debug = true
 end
 
@@ -43,17 +51,13 @@ if ~exist(pkgpath, "dir")
 end
 
 addpath(pkgpath);
-% Check whether there is a manifest file or not.
-manifest = fullfile(pkgpath, "manifest.txt");
-if exist(manifest, "file")
-    internals = readlines(manifest);
-    for internal = internals'
-        internal_path = fullfile(pkgpath, internal);
-        if ~exist(internal_path, "dir")
-            error("The internal package ""%s"" of ""%s"" doesn't exist, " + ...
-                "the GaRS library may be broken.", internal, pkg);
-        end
-        addpath(internal_path);
+
+% Add sub packages
+pkg_files = dir(pkgpath);
+
+for file = pkg_files'
+    if file.isdir && file.name ~= "." && file.name ~= ".."
+        addpath(fullfile(file.folder, file.name));
     end
 end
 

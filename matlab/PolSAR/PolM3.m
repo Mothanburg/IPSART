@@ -97,36 +97,36 @@ classdef (Abstract) PolM3 < PolMat
             end
         end
 
-        function outObj = MapPage(obj, func)
+        function outObj = MapPage(obj, func, varargin)
             outObj = obj;
 
-            new_m11 = func(obj.m11);
+            new_m11 = func(obj.m11, varargin{:});
             [outObj.Height,outObj.Width] = size(new_m11);
 
             outObj.m11 = zeros(outObj.Height, outObj.Width, obj.Dtype);
             outObj.m11(:,:) = new_m11;
 
-            new_m22 = func(obj.m22);
+            new_m22 = func(obj.m22, varargin{:});
             outObj.m22 = zeros(outObj.Height, outObj.Width, obj.Dtype);
             outObj.m22(:,:) = new_m22;
 
-            new_m33 = func(obj.m33);
+            new_m33 = func(obj.m33, varargin{:});
             outObj.m33 = zeros(outObj.Height, outObj.Width, obj.Dtype);
             outObj.m33(:,:) = new_m33;
 
-            new_m12 = func(obj.m12_r + 1i * obj.m12_i);
+            new_m12 = func(obj.m12_r + 1i * obj.m12_i, varargin{:});
             outObj.m12_r = zeros(outObj.Height, outObj.Width, obj.Dtype);
             outObj.m12_r(:,:) = real(new_m12);
             outObj.m12_i = zeros(outObj.Height, outObj.Width, obj.Dtype);
             outObj.m12_i(:,:) = imag(new_m12);
 
-            new_m13 = func(obj.m13_r + 1i * obj.m13_i);
+            new_m13 = func(obj.m13_r + 1i * obj.m13_i, varargin{:});
             outObj.m13_r = zeros(outObj.Height, outObj.Width, obj.Dtype);
             outObj.m13_r(:,:) = real(new_m13);
             outObj.m13_i = zeros(outObj.Height, outObj.Width, obj.Dtype);
             outObj.m13_i(:,:) = imag(new_m13);
 
-            new_m23 = func(obj.m23_r + 1i * obj.m23_i);
+            new_m23 = func(obj.m23_r + 1i * obj.m23_i, varargin{:});
             outObj.m23_r = zeros(outObj.Height, outObj.Width, obj.Dtype);
             outObj.m23_r(:,:) = real(new_m23);
             outObj.m23_i = zeros(outObj.Height, outObj.Width, obj.Dtype);

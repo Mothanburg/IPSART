@@ -1,32 +1,38 @@
 // Convention: Leading dimension is dim 0, and data storage is row-major
 #ifdef ENABLE_FP64
-#pragma OPENCL EXTENSION cl_khr_fp64:enable
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 #define dtype double
 #else
 #define dtype float
 #endif
 
+#ifdef MAT_SIZE_3X3
 __kernel void
 span_calc(__global dtype *span,
           __global const dtype *c11,
-          __global const dtype *c22
-#ifdef MAT_SIZE_3X3
-          , __global const dtype *c33
+          __global const dtype *c22,
+          __global const dtype *c33)
+#else
+__kernel void
+span_calc(__global dtype *span,
+          __global const dtype *c11,
+          __global const dtype *c22)
 #endif
-           )
 {
     int idx = get_global_id(0) * get_global_size(1) + get_global_id(1);
-    span[idx] = c11[idx] + c22[idx]
+
 #ifdef MAT_SIZE_3X3
-                + c33[idx]
+    span[idx] = c11[idx] + c22[idx] + c33[idx];
+#else
+    span[idx] = c11[idx] + c22[idx];
 #endif
-    ;
+
 }
 
 // A 7x7 refined lee filter
 __kernel void
 page_filting(int rows, int cols,
-             __global const dtype *span,  // the SPAN of the PolSAR image
+             __global const dtype *span, // the SPAN of the PolSAR image
              int shared_rows, int shared_cols, __local dtype *shared_mem,
              __constant dtype *prewitt,   // the size of prewitt operator templates is 7x7x8
              int look_num,                // look number
@@ -83,7 +89,7 @@ page_filting(int rows, int cols,
     int window_id = 0;
     __attribute__((opencl_unroll_hint)) for (int i = 1; i < 8; i++)
     {
-        window_id += isless(sums[window_id],sums[i]) * (i - window_id);
+        window_id += isless(sums[window_id], sums[i]) * (i - window_id);
     }
 
     dtype z_mean = 0.0;
@@ -133,7 +139,7 @@ page_filting(int rows, int cols,
         __attribute__((opencl_unroll_hint)) for (int j = 0; j < 7; j++)
         {
             mean_input += shared_mem[(local_row + i) * shared_cols + local_col + j] *
-                        prewitt[49 * window_id + i * 7 + j];
+                          prewitt[49 * window_id + i * 7 + j];
         }
     }
     mean_input /= 28.0;
@@ -141,5 +147,5 @@ page_filting(int rows, int cols,
     int g_row = get_global_id(0);
     int g_col = get_global_id(1);
     output[g_row * cols + g_col] = mean_input +
-                                       factor * (shared_mem[(local_row + 3) * shared_cols + local_col + 3] - mean_input);
+                                   factor * (shared_mem[(local_row + 3) * shared_cols + local_col + 3] - mean_input);
 }

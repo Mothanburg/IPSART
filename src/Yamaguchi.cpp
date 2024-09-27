@@ -4,7 +4,6 @@
 
 using namespace Eigen;
 using namespace std;
-using namespace std::literals;
 
 template <typename TData, int Dim>
 static void yamaguchi(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
@@ -24,50 +23,32 @@ static void yamaguchi(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
     // The form of helix scattering
     TArray ch;
     if (c(0, 1).imag() + c(1, 2).imag() > 0) {
-      ch << static_cast<TData>(1.0), TComplex(0, sqrt2),
-          static_cast<TData>(-1.0), TComplex(0, -sqrt2),
-          static_cast<TData>(2.0), TComplex(0, sqrt2), static_cast<TData>(-1.0),
-          TComplex(0, -sqrt2), static_cast<TData>(1.0);
-      ch /= static_cast<TData>(4.0);
+      ch << 1, TComplex(0, sqrt2), -1, TComplex(0, -sqrt2), 2,
+          TComplex(0, sqrt2), -1, TComplex(0, -sqrt2), 1;
+      ch /= 4;
     } else {
-      ch << static_cast<TData>(1.0), TComplex(0, -sqrt2),
-          static_cast<TData>(-1.0), TComplex(0, sqrt2), static_cast<TData>(2.0),
-          TComplex(0, -sqrt2), static_cast<TData>(-1.0), TComplex(0, sqrt2),
-          static_cast<TData>(1.0);
-      ch /= static_cast<TData>(4.0);
+      ch << 1, TComplex(0, -sqrt2), -1, TComplex(0, sqrt2), 2,
+          TComplex(0, -sqrt2), -1, TComplex(0, sqrt2), 1;
+      ch /= 4;
     }
-    TData fh = static_cast<TData>(2.0) * abs(c(0, 1).imag() + c(1, 2).imag());
+    TData fh = 2 * abs(c(0, 1).imag() + c(1, 2).imag());
 
     // The form of volume scattering
-    const TData coratio =
-        static_cast<TData>(10.0) * log10(c(2, 2).real() / c(0, 0).real());
+    const TData coratio = 10 * log10(c(2, 2).real() / c(0, 0).real());
     TArray cv;
     TData fv;
-    if (coratio < static_cast<TData>(-2.0)) {
-      cv << static_cast<TData>(8.0), static_cast<TData>(0.0),
-          static_cast<TData>(2.0), static_cast<TData>(0.0),
-          static_cast<TData>(4.0), static_cast<TData>(0.0),
-          static_cast<TData>(2.0), static_cast<TData>(0.0),
-          static_cast<TData>(3.0);
-      cv /= static_cast<TData>(15.0);
-      fv = static_cast<TData>(15.0) *
-           (c(1, 1).real() - fh / static_cast<TData>(2.0)) /
-           static_cast<TData>(4.0);
+    if (coratio < -2) {
+      cv << 8, 0, 2, 0, 4, 0, 2, 0, 3;
+      cv /= 15;
+      fv = 15 * (c(1, 1).real() - fh / 2) / 4;
     } else if (coratio < 2) {
-      cv << 3.0f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f, 1.0f, 0.0f, 3.0f;
-      cv /= static_cast<TData>(8.0);
-      fv = static_cast<TData>(4.0) *
-           (c(1, 1).real() - fh / static_cast<TData>(2.0));
+      cv << 3, 0, 1, 0, 2, 0, 1, 0, 3;
+      cv /= 8;
+      fv = 4 * (c(1, 1).real() - fh / 2);
     } else {
-      cv << static_cast<TData>(3.0), static_cast<TData>(0.0),
-          static_cast<TData>(2.0), static_cast<TData>(0.0),
-          static_cast<TData>(4.0), static_cast<TData>(0.0),
-          static_cast<TData>(2.0), static_cast<TData>(0.0),
-          static_cast<TData>(8.0);
-      cv /= static_cast<TData>(15.0);
-      fv = static_cast<TData>(15.0) *
-           (c(1, 1).real() - fh / static_cast<TData>(2.0)) /
-           static_cast<TData>(4.0);
+      cv << 3, 0, 2, 0, 4, 0, 2, 0, 8;
+      cv /= 15;
+      fv = 15 * (c(1, 1).real() - fh / 2) / 4;
     }
 
     // Remove volume and helix scattering only when cross-pol scattering is
@@ -75,18 +56,18 @@ static void yamaguchi(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
     if (c(1, 1).real() < c(0, 0).real() && c(1, 1).real() < c(2, 2).real()) {
       c = c - fh * ch - fv * cv;
     } else {
-      fh = static_cast<TData>(0.0);
-      fv = static_cast<TData>(0.0);
+      fh = 0;
+      fv = 0;
     }
 
     TData a2, b2, fd, fs;
     if (c(0, 2).real() > 0) {
-      a2 = 1.0f;
+      a2 = 1;
       fd = ((c(2, 2) * c(0, 0) - c(0, 2) * c(2, 0)) /
             (c(2, 2) + c(0, 0) + c(0, 2) + c(2, 0)))
                .real();
       fs = c(2, 2).real() - fd;
-      TComplex tmp = ((c(0, 2) + fd) / fs);
+      TComplex tmp = (c(0, 2) + fd) / fs;
       b2 = abs(tmp * conj(tmp));
     } else {
       b2 = 1;
@@ -98,8 +79,8 @@ static void yamaguchi(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
       a2 = abs(tmp * conj(tmp));
     }
 
-    outPs[idx] = abs(fs) * (static_cast<TData>(1.0) + b2);
-    outPd[idx] = abs(fd) * (static_cast<TData>(1.0) + a2);
+    outPs[idx] = abs(fs) * (1 + b2);
+    outPd[idx] = abs(fd) * (1 + a2);
     outPh[idx] = abs(fh);
     outPv[idx] = abs(fv);
   }

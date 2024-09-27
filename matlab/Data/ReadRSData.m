@@ -1,3 +1,6 @@
+% Read Data with ENVI header file
+% Corresponding file names of data and header file: 
+%     "prefix/dataName.fileExt" and "prefix/dataName.hdr"
 function data = ReadRSData(prefix, dataName, fileExt)
 
 arguments
@@ -52,11 +55,9 @@ end
 end
 
 
-% 解析ENVI头文件，允许加入自定义属性
-% 语法要求：属性名 + <任意数量空格/制表符> + "="符号 + <任意数量空格/制表符> + 属性值 + 换行符
-% 属性名要求：全字母，单词间仅允许单个空格，解析后空格会被替换为"_"
-% 属性值要求：一般属性不允许包含"="、";"，且必须在单行内写完；如要包含特殊字符或换行，请用"{}"将属性值括起来
-% TODO：完整支持标准ENVI头文件
+% Parsing ENVI header file
+% TODO: support more properties in ENVI header file
+% NOTE: This function may cause error because of nonstandard syntax in the file
 function headerInfo = fn_parse_envi_header(headerfile)
 
 lines = readlines(headerfile, "WhitespaceRule", "trim", "EmptyLineRule", "skip");
@@ -174,15 +175,13 @@ end
 
 end
 
-% 根据ENVI头文件属性名，将属性值转换为真实类型
-% NOTE：现只支持必要的属性，其它属性将保留成字符串
-% TODO：支持全部属性
+% Convert the property name to property value
 function value = fn_lookup_valuetype(property_name, value_string)
 
 switch property_name
-    case "bands"  % 波段数
+    case "bands"  % band num
         value = str2double(value_string);
-    case "byte_order"  % 字节序，小端：0，大端：1
+    case "byte_order"  % byte order, little edian: 0, big edain: 1
         edians = ["ieee-le" "ieee-be"];
         value = edians(str2double(value_string) + 1);
     case "data_type"
@@ -211,7 +210,7 @@ switch property_name
             case 15
                 value = "uint64";
             otherwise
-                error("ReadRSData:invalidDataType", "错误的数据类型");
+                error("Unknown data type");
         end
     case "header_offset"
         value = str2double(value_string);

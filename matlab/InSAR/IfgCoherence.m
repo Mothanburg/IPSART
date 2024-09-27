@@ -5,11 +5,11 @@ window = ones(windowSize);
 nom = imfilter(master .* conj(slave), window);
 
 filted = imfilter( ...
-    master .* conj(master) + 1i * slave .* conj(slave), ...
+    abs(master).^2 + 1i * abs(slave).^2, ...
     window ...
     );
 den = sqrt(real(filted) .* imag(filted));
 
-coh = abs(nom ./ den);
+coh = abs(nom) ./ den;
 
 end

@@ -36,9 +36,12 @@ octave-workspace
 # Xmake build directory
 build/
 
-# VS directories
+# VS and vscode directories
 .vs*/
 vs*/
+
+# caches
+.cache/
 
 # binaries
 bin/

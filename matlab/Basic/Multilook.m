@@ -9,7 +9,7 @@ end
 
 [in_rows,in_cols] = size(image);
 if in_rows < rowLook || in_cols < colLook
-    error("The image size must be bigger than look numbers.")
+    error("The image size must be bigger than look numbers.");
 end
 
 global gars_mtlk_gpu_enable

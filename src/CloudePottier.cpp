@@ -26,25 +26,21 @@ static void cloude_pottier(const PolMatView<TData, Dim> &pol_mat, TData *outH,
     const TRowVec alphas = eig_vecs.row(0).array().abs();
 
     if constexpr (Dim == 2) {
-      outH[idx] = p.unaryExpr([](auto x) {
-                     return x != static_cast<TData>(0.0)
-                                ? -x * log2(x)
-                                : static_cast<TData>(0.0);
-                   }).sum();
+      outH[idx] =
+          p.unaryExpr([](auto x) { return x != 0 ? -x * log2(x) : 0; }).sum();
       outA[idx] = abs(p(0) - p(1)) / p.sum();
     } else {
-      outH[idx] = p.unaryExpr([](auto x) {
-                     return x != static_cast<TData>(0.0)
-                                ? -x * log(x) / log(static_cast<TData>(3.0))
-                                : static_cast<TData>(0.0);
-                   }).sum();
+      outH[idx] =
+          p.unaryExpr([](auto x) {
+             return x != 0 ? -x * log(x) / log(static_cast<TData>(3)) : 0;
+           }).sum();
       const TData p1 = p.maxCoeff();
       const TData p3 = p.minCoeff();
       const TData p_sum = p.sum();
-      outA[idx] = (p_sum - p1 - static_cast<TData>(2.0) * p3) / (p_sum - p1);
+      outA[idx] = (p_sum - p1 - 2 * p3) / (p_sum - p1);
     }
 
-    outAlpha[idx] = static_cast<TData>(180.0) * (p * alphas.acos()).sum() / PI;
+    outAlpha[idx] = 180 * (p * alphas.acos()).sum() / PI;
   }
 }
 

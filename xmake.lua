@@ -16,8 +16,7 @@ target("GaRS")
 
     add_cxxflags(
         "cl::/bigobj",
-        "cl::/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
-        "gcc::-static-libstdc++"
+        "cl::/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
         )
 
     add_defines("COMPILING_GARS")

@@ -1,3 +1,0 @@
-Decomposition
-Filtering
-Classification

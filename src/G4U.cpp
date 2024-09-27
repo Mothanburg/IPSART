@@ -19,78 +19,64 @@ static int g4u(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
   for (auto idx = 0; idx < len; idx++) {
     TMat t0 = pol_mat.at(idx);
 
-    TData two_theta = atan(t0(1, 2).real() * static_cast<TData>(2.0) /
-                           (t0(1, 1).real() - t0(2, 2).real())) /
-                      static_cast<TData>(2.0);
+    TData two_theta =
+        atan((t0(1, 2).real() * 2) / (t0(1, 1).real() - t0(2, 2).real())) / 2;
 
     TMat t = t0;
     if (!isnan(two_theta)) {
       TMatReal r;
-      r << static_cast<TData>(1.0), static_cast<TData>(0.0),
-          static_cast<TData>(0.0), static_cast<TData>(0.0), cos(two_theta),
-          sin(two_theta), static_cast<TData>(0.0), -sin(two_theta),
+      r << 1, 0, 0, 0, cos(two_theta), sin(two_theta), 0, -sin(two_theta),
           cos(two_theta);
       t = r * t0 * r.transpose();
     }
     TData tp = t.trace().real();
 
     TData fs, fd, fv;
-    TData fh = abs(t(1, 2).imag()) * static_cast<TData>(2.0);
+    TData fh = abs(t(1, 2).imag()) * 2;
     TData c1 =
-        t(0, 0).real() - t(1, 1).real() +
-        t(2, 2).real() * static_cast<TData>(7.0) / static_cast<TData>(8.0) +
-        fh / static_cast<TData>(16.0);
+        t(0, 0).real() - t(1, 1).real() + t(2, 2).real() * 7 / 8 + fh / 16;
 
-    if (c1 > static_cast<TData>(0.0)) {
+    if (c1 > 0) {
       TComplex c;
-      TData coratio = log10((t(0, 0).real() + t(1, 1).real() -
-                             t(0, 1).real() * static_cast<TData>(2.0)) /
-                            (t(0, 0).real() + t(1, 1).real() +
-                             t(0, 1).real() * static_cast<TData>(2.0))) *
-                      static_cast<TData>(10.0);
+      TData coratio =
+          10 * log10((t(0, 0).real() + t(1, 1).real() - t(0, 1).real() * 2) /
+                     (t(0, 0).real() + t(1, 1).real() + t(0, 1).real() * 2));
 
-      if (coratio < static_cast<TData>(-2.0)) {
-        fv = (t(2, 2).real() * static_cast<TData>(2.0) - fh) *
-             static_cast<TData>(15.0) / static_cast<TData>(8.0);
-        if (fv < static_cast<TData>(0.0)) {
-          fh = static_cast<TData>(0.0);
-          fv = t(2, 2).real() * static_cast<TData>(2.0) *
-               static_cast<TData>(15.0) / static_cast<TData>(8.0);
+      if (coratio < -2) {
+        fv = (t(2, 2).real() * 2 - fh) * 15 / 8;
+        if (fv < 0) {
+          fh = 0;
+          fv = t(2, 2).real() * 2 * 15 / 8;
         }
-        c = t(0, 1) + t(0, 2) - fv / static_cast<TData>(6.0);
-      } else if (coratio > static_cast<TData>(-2.0) &&
-                 coratio < static_cast<TData>(2.0)) {
-        fv = (t(2, 2).real() * static_cast<TData>(2.0) - fh) *
-             static_cast<TData>(2.0);
-        if (fv < static_cast<TData>(0.0)) {
-          fh = static_cast<TData>(0.0);
-          fv = t(2, 2).real() * static_cast<TData>(2.0) *
-               static_cast<TData>(2.0);
+        c = t(0, 1) + t(0, 2) - fv / 6;
+      } else if (coratio > -2 && coratio < 2) {
+        fv = (t(2, 2).real() * 2 - fh) * 2;
+        if (fv < 0) {
+          fh = 0;
+          fv = t(2, 2).real() * 4;
         }
         c = t(0, 1) + t(0, 2);
       } else {
-        fv = (t(2, 2).real() * static_cast<TData>(2.0) - fh) *
-             static_cast<TData>(15.0) / static_cast<TData>(8.0);
-        if (fv < static_cast<TData>(0.0)) {
-          fh = static_cast<TData>(0.0);
-          fv = t(2, 2).real() * static_cast<TData>(2.0) *
-               static_cast<TData>(15.0) / static_cast<TData>(8.0);
+        fv = (t(2, 2).real() * 2 - fh) * 15 / 8;
+        if (fv < 0) {
+          fh = 0;
+          fv = t(2, 2).real() * 2 * 15 / 8;
         }
-        c = t(0, 1) + t(0, 2) + fv / static_cast<TData>(6.0);
+        c = t(0, 1) + t(0, 2) + fv / 6;
       }
 
-      TData s = t(0, 0).real() - fv / static_cast<TData>(2.0);
+      TData s = t(0, 0).real() - fv / 2;
       TData d = tp - fv - fh - s;
 
       if ((fv + fh) >= tp) {
-        outPs[idx] = static_cast<TData>(0.0);
-        outPd[idx] = static_cast<TData>(0.0);
+        outPs[idx] = 0;
+        outPd[idx] = 0;
         outPv[idx] = tp - fh;
         outPh[idx] = fh;
         continue;
       } else {
-        TData c0 = t(0, 0).real() * static_cast<TData>(2.0) + fh - tp;
-        if (c0 > static_cast<TData>(0.0)) {
+        TData c0 = t(0, 0).real() * 2 + fh - tp;
+        if (c0 > 0) {
           fs = s + abs(c) * abs(c) / s;
           fd = d - abs(c) * abs(c) / s;
         } else {
@@ -99,12 +85,10 @@ static int g4u(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
         }
       }
     } else {
-      fv = (t(2, 2).real() * 2.0f - fh) * static_cast<TData>(15.0) /
-           static_cast<TData>(16.0);
-      if (fv < static_cast<TData>(0.0)) {
-        fh = static_cast<TData>(0.0);
-        fv = t(2, 2).real() * static_cast<TData>(2.0) *
-             static_cast<TData>(15.0) / static_cast<TData>(16.0);
+      fv = (t(2, 2).real() * 2 - fh) * 15 / 16;
+      if (fv < 0) {
+        fh = 0;
+        fv = t(2, 2).real() * 2 * 15 / 16;
       }
       TData s = t(0, 0).real();
       TData d = tp - fv - fh - s;
@@ -113,17 +97,17 @@ static int g4u(const PolMatView<TData, Dim> &pol_mat, TData *outPs,
       fd = d + abs(c) * abs(c) / d;
     }
 
-    if (fs >= static_cast<TData>(0.0) && fd >= static_cast<TData>(0.0)) {
+    if (fs >= 0 && fd >= 0) {
       outPs[idx] = fs;
       outPd[idx] = fd;
       outPv[idx] = fv;
       outPh[idx] = fh;
-    } else if (fs >= static_cast<TData>(0.0) && fd < static_cast<TData>(0.0)) {
+    } else if (fs >= 0 && fd < 0) {
       outPs[idx] = tp - fv - fh;
       outPd[idx] = 0;
       outPv[idx] = fv;
       outPh[idx] = fh;
-    } else if (fs < static_cast<TData>(0.0) && fd >= static_cast<TData>(0.0)) {
+    } else if (fs < 0 && fd >= 0) {
       outPs[idx] = 0;
       outPd[idx] = tp - fh - fv;
       outPv[idx] = fv;

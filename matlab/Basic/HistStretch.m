@@ -32,9 +32,13 @@ switch method
         b = prctile(bands, 99, [1 2]);
         c = a - 0.1 * (b - a);
         d = b + 0.5 * (b - a);
-        result = bands;
-        result(bands < c) = c;
-        result(bands > d) = d;
+        [~,~,n_bands] = size(bands);
+        for idx = 1:n_bands
+            tmp = squeeze(bands(:,:,idx));
+            tmp(tmp < c(idx)) = c(idx);
+            tmp(tmp > d(idx)) = d(idx);
+            result(:,:,idx) = tmp;
+        end
         result = (result - c) ./ (d - c);
     case "Log"
         a = min(bands, [], [1 2]);

@@ -7,20 +7,20 @@ arguments
     alphaOrCorr double
 end
 
-if windowSize(1) >= 2 * overlap(1)
+if windowSize(1) < 2 * overlap(1)
     error("Overlap in rows must be less than half of window size in rows");
 end
 row_step = windowSize(1) - overlap(1);
 
-if windowSize(2) >= 2 * overlap(2)
+if windowSize(2) < 2 * overlap(2)
     error("Overlap in cols must be less than half of window size in cols");
 end
 col_step = windowSize(2) - overlap(2);
 
 use_coh_flag = false;
 if numel(alphaOrCorr) > 1
-    if all(size(ifg) == size(alphaOrCorr))
-        error("The given correlation coeffcient must have the same size as ifg");
+    if ~all(size(ifg) == size(alphaOrCorr))
+        error("The given correlation coeffcient must have the same size as 'ifg'");
     end
     use_coh_flag = true;
 end

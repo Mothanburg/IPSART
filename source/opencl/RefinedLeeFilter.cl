@@ -6,27 +6,24 @@
 #define dtype float
 #endif
 
-#ifdef MAT_SIZE_3X3
 __kernel void
+#ifdef MAT_SIZE_3X3
 span_calc(__global dtype *span,
           __global const dtype *c11,
           __global const dtype *c22,
           __global const dtype *c33)
 #else
-__kernel void
 span_calc(__global dtype *span,
           __global const dtype *c11,
           __global const dtype *c22)
 #endif
 {
     int idx = get_global_id(0) * get_global_size(1) + get_global_id(1);
-
 #ifdef MAT_SIZE_3X3
     span[idx] = c11[idx] + c22[idx] + c33[idx];
 #else
     span[idx] = c11[idx] + c22[idx];
 #endif
-
 }
 
 // A 7x7 refined lee filter

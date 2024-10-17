@@ -55,3 +55,7 @@ target("testing")
     set_languages("c++20")
 
     add_files("test/main.cpp")
+
+    on_install(function (target) 
+        wprint("This target cannot be installed.")
+    end)

@@ -17,7 +17,7 @@ multilook(int input_cols, __global const dtype *input,
     int row_in = row_out * row_look;
     int col_in = col_out * col_look;
 
-    dtype sum = 0.0;
+    dtype sum = 0;
     for (int dr = 0; dr < row_look; dr++)
     {
         for (int dc = 0; dc < col_look; dc++)

@@ -27,13 +27,13 @@ function main(target)
 
         -- install GaRS library file
         local tgt_file = target:targetfile()
-        os.cp(tgt_file, installdir)
+        os.vcp(tgt_file, installdir)
         if target:is_plat("windows") then
             tgt_lib_file = string.gsub(tgt_file, "%.dll$", ".lib")
             os.vcp(tgt_lib_file, installdir)
         end
         print("You may need to run the bootstrap script 'generate_matlab_interface.m' in the '../bootstrap'")
- 
+
 end
 
 function _is_shared_lib(target, libpath)

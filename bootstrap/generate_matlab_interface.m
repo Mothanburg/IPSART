@@ -3,7 +3,11 @@
 header = "../include/GaRS.h";
 
 if ispc
-    lib = "../bin/GaRS.lib";
+    if exist("../bin/GaRS.lib", "file")
+        lib = "../bin/GaRS.lib";
+    else
+        lib = "../bin/GaRS.dll";
+    end
 else
     if exist("../bin/GaRS.dylib", "file")
         lib = "../bin/GaRS.dylib";

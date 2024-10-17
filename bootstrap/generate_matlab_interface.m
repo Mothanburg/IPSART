@@ -3,8 +3,8 @@
 header = "../include/GaRS.h";
 
 if ispc
-    if exist("../bin/GaRS.lib", "file")
-        lib = "../bin/GaRS.lib";
+    if exist("GaRS.lib", "file")
+        lib = "GaRS.lib";
     else
         lib = "../bin/GaRS.dll";
     end
@@ -24,7 +24,7 @@ clibgen.generateLibraryDefinition(...
     OutputFolder=".", ...
     Verbose=true, ...
     OverwriteExistingDefinitionFiles=true ...
-);
+    );
 
 
 %% You may check the 'definegars.m' before runing this part;
@@ -36,3 +36,6 @@ copyfile("gars/garsInterface.dll", "../bin");
 
 rmdir("gars", "s");
 delete("definegars.m", "garsData.xml");
+if exist("GaRS.lib", "file")
+    delete("GaRS.lib");
+end

@@ -9,8 +9,8 @@ libDef = clibgen.LibraryDefinition("garsData.xml");
 
 libDef.OutputFolder = ".";
 if ispc
-    if exist("../bin/GaRS.lib", "file")
-        libDef.Libraries = "../bin/GaRS.lib";
+    if exist("GaRS.lib", "file")
+        libDef.Libraries = "GaRS.lib";
     else
         libDef.Libraries = "../bin/GaRS.dll";
     end

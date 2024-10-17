@@ -3,48 +3,54 @@ import("core.project.config")
 -- install GaRS native library
 function main(target)
 
-        local installdir = path.join(os.projectdir(), "..", "bin")
+        local installdir = "../bin/"
         if not os.exists(installdir) then
             os.mkdir(installdir)
+        else
+            for _, existed in ipairs(os.files(installdir .. "*|*garsInterface*")) do
+                os.rm(installdir .. existed)
+            end
         end
 
-        -- install all shared libs of depended packages
-        local installed = {}
+        -- Install GaRS library file itself
+        local tgt_file = target:targetfile()
+        os.cp(tgt_file, installdir)
+
+        -- Install the import library for MATLAB bootstrapping if compiled by MSVC
+        if target:is_plat("windows") then
+            local bootstrapdir = "../bootstrap/"
+            local tgt_lib_file = string.gsub(tgt_file, "%.dll$", ".lib")
+            os.cp(tgt_lib_file, bootstrapdir)
+        end
+
+        -- Install all dependency libraries for common platforms
+        -- TODO: fix symbolic links on linux systems
         for _, pkg in ipairs(target:orderpkgs()) do
             if pkg:enabled() then
                 for _, libpath in ipairs(table.wrap(pkg:get("libfiles"))) do
                     if _is_shared_lib(target, libpath) then
-                        local libname = path.filename(libpath)
-                        if installed[libname] then
-                            wprint("'%s' already exists, overwriting it.", libname)
-                        end
                         os.cp(libpath, installdir)
-                        installed[libname] = true
                     end
                 end
             end
         end
 
-        -- install GaRS library file
-        local tgt_file = target:targetfile()
-        os.cp(tgt_file, installdir)
-        if target:is_plat("windows") then
-            tgt_lib_file = string.gsub(tgt_file, "%.dll$", ".lib")
-            os.cp(tgt_lib_file, installdir)
-        end
-
-        -- for MSYS2, install the necessary libstdc++/libomp/libpthread/... runtime libraries
+        -- We must install all dependency libraries manually (stdc++/omp/pthread/...) for MSYS2
+        --     because they are all 'system' libraries
+        -- TODO: automatical retrieval of dependency libraries
         if target:is_plat("msys") then
             local envs = os.getenvs()
             local msystem = envs["MSYSTEM"]
             local bin_dir = "/" .. string.lower(msystem) .. "/bin/"
-            local runtimes_libs = {"libgcc_s_seh-1.dll", "libgomp-1.dll", "libwinpthread-1.dll", "libstdc++-6.dll"}
+            local runtimes_libs = {
+                "libgcc_s_seh-1.dll",
+                "libgomp-1.dll",
+                "libwinpthread-1.dll",
+                "libstdc++-6.dll",
+                "OpenCL.dll"
+            }
             for _, libname in pairs(runtimes_libs) do
                 os.runv("cp", {bin_dir .. libname, installdir})
-            end
-            -- remove GaRS.lib to help MATLAB finding the correct library
-            if os.exists(path.join(installdir, "GaRS.lib")) then
-                os.rm(path.join(installdir, "GaRS.lib"))
             end
         end
 

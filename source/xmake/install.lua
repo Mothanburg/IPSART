@@ -37,20 +37,19 @@ function main(target)
 
         -- We must install all dependency libraries manually (stdc++/omp/pthread/...) for MSYS2
         --     because they are all 'system' libraries
-        -- TODO: automatical retrieval of dependency libraries
         if target:is_plat("msys") then
-            local envs = os.getenvs()
-            local msystem = envs["MSYSTEM"]
-            local bin_dir = "/" .. string.lower(msystem) .. "/bin/"
-            local runtimes_libs = {
-                "libgcc_s_seh-1.dll",
-                "libgomp-1.dll",
-                "libwinpthread-1.dll",
-                "libstdc++-6.dll",
-                "OpenCL.dll"
-            }
-            for _, libname in pairs(runtimes_libs) do
-                os.runv("cp", {bin_dir .. libname, installdir})
+            local msystem = string.lower(os.getenvs()["MSYSTEM"])
+            local prefix = "/" .. msystem .. "/bin/"
+            local dependencies, _ = os.iorun("ldd " .. target:targetfile())
+            -- The result of 'ldd' include windows system dll, we don't need to copy them.
+            for dll in string.gmatch(dependencies, "([^%s]+%.[dD][lL][lL]) =>") do
+                -- All dependencies should be placed in "/${MSYSTEM}/bin/"
+                local dll_file = prefix .. dll
+                try {
+                    function ()
+                        os.runv("cp", {dll_file, installdir})
+                    end
+                }
             end
         end
 

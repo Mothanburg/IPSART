@@ -1,32 +1,37 @@
 % Store data as ENVI data format
-% File name of stored data and its header file:
-%    "prefix/dataName" and "prefix/dataName.hdr"
-function data = StoreRSData(data, prefix, dataName, options)
+% Parameters
+%    data: array with up to 3 dimensions
+%    filePath: full path of the data
+%    fileExtensionPolicy: Determine the file name of the generated header file
+%       "Sub" [default]: substitution the data file's extension into .hdr
+%       "Append": append .hdr to the data file's name 
+%    useLowPrecision: whether cast double/int64 to single/int32 when storing 
+function StoreRSData(data, filePath, options)
 
 arguments
     data (:,:,:)
-    prefix string
-    dataName string = ""
-    options.fileExt string = ""
+    filePath string
+    options.fileExtensionPolicy string = "Sub"
     options.useLowPrecision logical = false
 end
 
-if ~exist(prefix, "dir")
+[prefix,file_name,file_ext] = fileparts(filePath);
+
+switch upper(options.fileExtensionPolicy)
+    case "SUB"
+        header_file = fullfile(prefix, file_name + ".hdr");
+    case "APPEND"
+        header_file = fullfile(prefix, file_name + file_ext + ".hdr");
+    otherwise
+        error("Unknown option of fileExtensionPolicy: '%s'", ...
+            options.fileExtensionPolicy);
+end
+
+if exist(filePath, "file")
+    warning("The file %s exists, overwriting it.", filePath);
+    delete(filePath);
+elseif ~exist(prefix, "dir")
     mkdir(prefix);
-end
-
-if ~endsWith(prefix, [filesep, "/"])
-    prefix = strcat(prefix, filesep);
-end
-
-if dataName == ""
-    dataName = inputname(1);
-end
-
-filename = strcat(prefix, dataName, options.fileExt);
-if exist(filename, "file")
-    warning("The file %s alread exists, overwriting it.", filename);
-    delete(filename);
 end
 
 [lines,samples,bands] = size(data);
@@ -44,7 +49,7 @@ if ~isreal(data)
     
     multibandwrite(...
         cast(raw_bands, class(data)), ...
-        filename, ...
+        filePath, ...
         "bsq", ...
         "machfmt", "ieee-le" ...
         );
@@ -67,7 +72,7 @@ else
     
     multibandwrite(...
         data, ...
-        filename, ...
+        filePath, ...
         "bsq", ...
         "machfmt", "ieee-le" ...
         );
@@ -101,7 +106,7 @@ switch data_type
 end
 
 % Write header file
-fid = fopen(strcat(prefix, dataName, ".hdr"), "w");
+fid = fopen(header_file, "w");
 fprintf(fid, "ENVI\n");
 fprintf(fid, "bands = %d\n", bands);
 fprintf(fid, "samples = %d\n", samples);

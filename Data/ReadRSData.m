@@ -1,30 +1,41 @@
-% Read Data with ENVI header file
-% Corresponding file names of data and header file: 
-%     "prefix/dataName.fileExt" and "prefix/dataName.hdr"
-function data = ReadRSData(prefix, dataName, fileExt)
+% Read data with ENVI data format
+% Parameters
+%    filePath: full path of the data
+%    fileExtensionPolicy: Determine how to find the header file
+%       "Sub" [default]: substitution the data file's extension into .hdr
+%       "Append": append .hdr to the data file's name
+function data = ReadRSData(filePath, options)
 
 arguments
-    prefix string
-    dataName string
-    fileExt string = ""
+    filePath string
+    options.fileExtensionPolicy string = "Sub"
 end
 
-if ~endsWith(prefix, [filesep, "/"])
-    prefix = strcat(prefix, filesep);
-end
-file_path = strcat(prefix, dataName, fileExt);
-header_path = strcat(prefix, dataName, ".hdr");
-if ~exist(header_path, "file") || ~exist(file_path, "file")
-    error("Cannot find data or its .hdr file");
+[prefix,file_name,file_ext] = fileparts(filePath);
+
+switch upper(options.fileExtensionPolicy)
+    case "SUB"
+        header_file = fullfile(prefix, file_name + ".hdr");
+    case "APPEND"
+        header_file = fullfile(prefix, file_name + file_ext + ".hdr");
+    otherwise
+        error("Unknown option of fileExtensionPolicy: '%s'", ...
+            options.fileExtensionPolicy);
 end
 
-header = fn_parse_envi_header(header_path);
+if ~exist(filePath, "file")
+    error("Cannot find the data file '%s'", file_name + file_ext);
+elseif ~exist(header_file, "file")
+    error("Cannot find the header file of '%s'", file_name + file_ext);
+end
+
+header = fn_parse_envi_header(header_file);
 
 if startsWith(header.data_type, "complex")
 
     inter_datatype = replace(header.data_type, "complex", "float");
     raw = multibandread(...
-        file_path, ...
+        filePath, ...
         [header.lines header.samples * 2 header.bands], ...
         "*" + inter_datatype, ...
         header.header_offset, ...
@@ -42,7 +53,7 @@ if startsWith(header.data_type, "complex")
 else
 
     data = multibandread(...
-        file_path, ...
+        filePath, ...
         [header.lines header.samples header.bands], ...
         "*" + header.data_type, ...
         header.header_offset, ...
@@ -83,7 +94,7 @@ while true
         end
         property_name = property_name + "_" + token.value;
     end
-   
+
     % Next token must be 'ASSIGN'
     if token.type ~= "ASSIGN"
         error("Missing '=' in line %d.", n_line);
@@ -140,7 +151,7 @@ while idx <= length(text) && isspace(text(idx))
     idx = idx + 1;
 end
 
-% valid type: NULL (no more token) WORD (starts with letter), ASSIGN ('='), L_BRACE ('{'), 
+% valid type: NULL (no more token) WORD (starts with letter), ASSIGN ('='), L_BRACE ('{'),
 % VALUE (any non-space ascii character)
 
 if idx > length(text)

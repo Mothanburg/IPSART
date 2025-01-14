@@ -1,56 +1,63 @@
-function [mstOut,varargout] = StackCreating(master, slaves, slaveOffsets)
+function [varargout] = StackCreating(master, masterPSPoint, slave, slavePSPoint)
 
 arguments
     master
+    masterPSPoint (1,2)
 end
 
 arguments (Repeating)
-    slaves
-    slaveOffsets (1,2) {mustBeInteger}
+    slave
+    slavePSPoint (1,2) {mustBeInteger}
 end
 
-[mlines,mpixels] = size(master);
+[m_height,m_width] = size(master);
 
-for i = 1:length(slaves)
-    [sliness(i),spixelss(i)] = size(slaves{i});
+for i = 1:length(slave)
+    [s_heights(i),s_widths(i)] = size(slave{i});
 
-    offset = slaveOffsets{i};
-    offsetls(i) = offset(1);
-    offsetps(i) = offset(2);
+    offset = slavePSPoint{i} - masterPSPoint;
+    pos_offset_hs(i) = offset(1);
+    pos_offset_ws(i) = offset(2);
 
-    rev_offsetls(i) = sliness(i) - offsetls(i) - mlines;
-    rev_offsetps(i) = spixelss(i) - offsetps(i) - mpixels;
+    neg_offset_hs(i) = s_heights(i) - pos_offset_hs(i) - m_height;
+    neg_offset_ws(i) = s_widths(i) - pos_offset_ws(i) - m_width;
 end
 
-mststartl = max([1, 1 - offsetls]);
-mstendl = min([mlines, mlines + rev_offsetls]);
-mststartp = max([1, 1 - offsetps]);
-mstendp = min([mpixels, mpixels + rev_offsetps]);
+m_start_row = max([1, 1 - pos_offset_hs]);
+m_end_row = min([m_height, m_height + neg_offset_hs]);
+m_start_col = max([1, 1 - pos_offset_ws]);
+m_end_col = min([m_width, m_width + neg_offset_ws]);
 
-if mststartl >= mstendl || mststartp >= mstendp
+if m_start_row >= m_end_row || m_start_col >= m_end_col
     error("The images must have an overlapping area");
 end
 
-mstOut = master(mststartl:mstendl,mststartp:mstendp);
+out.image = master(m_start_row:m_end_row,m_start_col:m_end_col);
+out.row_skip = m_start_row - 1;
+out.col_skip = m_start_col - 1;
+varargout{1} = out;
 
-for i = 1:length(slaves)
-    slave = slaves{i};
+for i = 1:length(slave)
+    slave_img = slave{i};
 
-    slvstartl = max([1, 1 + offsetls(i), 1 + offsetls(i) - min(offsetls)]);
-    slvendl = min([ ...
-        sliness(i), ...
-        sliness(i) - rev_offsetls(i), ...
-        sliness(i) - rev_offsetls(i) + min(rev_offsetls) ...
+    s_start_row = max([1, 1 + pos_offset_hs(i), 1 + pos_offset_hs(i) - min(pos_offset_hs)]);
+    s_end_row = min([ ...
+        s_heights(i), ...
+        s_heights(i) - neg_offset_hs(i), ...
+        s_heights(i) - neg_offset_hs(i) + min(neg_offset_hs) ...
         ]);
 
-    slvstartp = max([1, 1 + offsetps(i), 1 + offsetps(i) - min(offsetps)]);
-    slvendp = min([ ...
-        spixelss(i), ...
-        spixelss(i) - rev_offsetps(i), ...
-        spixelss(i) - rev_offsetps(i) + min(rev_offsetps) ...
+    s_start_col = max([1, 1 + pos_offset_ws(i), 1 + pos_offset_ws(i) - min(pos_offset_ws)]);
+    s_end_col = min([ ...
+        s_widths(i), ...
+        s_widths(i) - neg_offset_ws(i), ...
+        s_widths(i) - neg_offset_ws(i) + min(neg_offset_ws) ...
         ]);
 
-    varargout{i} = slave(slvstartl:slvendl,slvstartp:slvendp);
+    out.image = slave_img(s_start_row:s_end_row,s_start_col:s_end_col);
+    out.row_skip = s_start_row - 1;
+    out.col_skip = s_start_col - 1;
+    varargout{i + 1} = out;
 end
 
 

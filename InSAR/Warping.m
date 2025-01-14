@@ -5,7 +5,7 @@ arguments
     slave
     gcpMaster
     gcpSlave
-    gcpCorr
+    gcpCorr = []
     options.WARP_POLYNOMIAL_ORDER = 3
     options.WARP_SOLVING_METHOD = "LS"
     options.RESAMPLE_ESTIMATE_DOPPLER_CENTROID = false
@@ -27,7 +27,7 @@ A = create_polyn_param_mat( ...
     order ...
     );
 
-if gcpCorr
+if ~isempty(gcpCorr)
     Q = diag(gcpCorr / mean(gcpCorr)); % weighting matrix
 else
     Q = eye(n_gcp);
@@ -72,14 +72,14 @@ switch interp_method
             nan ...
             );
     case "6-point cubic"
-        krnl_lut = create_interp_table(@cc_6p, 6);
-        result = image_interp(slave, Lq, Pq, krnl_lut, nan);
+        krnl_lut = construct_interp_table(@cc_6p, 6);
+        result = interp_image(slave, Lq, Pq, krnl_lut, nan);
     case "8-point sinc"
-        krnl_lut = create_interp_table(@sinc_8p, 8);
-        result = image_interp(slave, Lq, Pq, krnl_lut, nan);
+        krnl_lut = construct_interp_table(@sinc_8p, 8);
+        result = interp_image(slave, Lq, Pq, krnl_lut, nan);
     case "16-point sinc"
-        krnl_lut = create_interp_table(@sinc_16p, 16);
-        result = image_interp(slave, Lq, Pq, krnl_lut, nan);
+        krnl_lut = construct_interp_table(@sinc_16p, 16);
+        result = interp_image(slave, Lq, Pq, krnl_lut, nan);
     otherwise
         error("Unknown error");
 end
@@ -89,14 +89,14 @@ end
 
 
 
-%%%%%%%%%%%%%%%% Normalize coordinates into [-2 2] %%%%%%%%%%%%%%%%
+%----------------- Normalize coordinates into [-2 2] -----------------%
 function result = normalize2(value, low, high)
     result = 4 * (value - low) ./ (high - low) - 2;
 end
 
 
 
-%%%%%%%%%%%%%%%% Create Polynomial Parameter Matrix %%%%%%%%%%%%%%%%
+%----------------- Create Polynomial Parameter Matrix -----------------%
 function A = create_polyn_param_mat(lines, pixels, order)
 
 len = length(lines);
@@ -120,8 +120,8 @@ end
 
 
 
-%%%%%%%%%%%%%%%% Create Interpolation LUT %%%%%%%%%%%%%%%%
-function [axis,value] = create_interp_table(krnlFunc, krnlLen)
+%----------------- Construct Interpolation LUT -----------------%
+function [value,axis] = construct_interp_table(krnlFunc, krnlLen)
 
 n_quant = 128;
 spacing = 1 / (n_quant - 1);
@@ -139,14 +139,14 @@ end
 
 function value = sinc_8p(axis)
 
-value = sinc(axis) .* rectpuls(axis / 8);
+value = sinc(axis);
 value = value / sum(value);
 
 end
 
 function value = sinc_16p(axis)
 
-value = sinc(axis) .* rectpuls(axis / 16);
+value = sinc(axis);
 value = value / sum(value);
 
 end
@@ -175,8 +175,8 @@ end
 
 
 
-%%%%%%%%%%%%%%%% Image Interpolation %%%%%%%%%%%%%%%%
-function result = image_interp(image, Lq, Pq, lut, extraVal)
+%----------------- Image Interpolation -----------------%
+function result = interp_image(image, Lq, Pq, lut, extraVal)
 
 result = zeros(size(Lq));
 [lines,pixels] = size(Lq);
@@ -190,10 +190,8 @@ margined(margin + (1:lines),margin + (1:pixels)) = image;
 
 Lq = parallel.pool.Constant(Lq);
 Pq = parallel.pool.Constant(Pq);
-lut = parallel.pool.Constant(lut);
 margined = parallel.pool.Constant(margined);
 parfor idx = 1:len
-    
     lq = Lq.Value(idx);
     pq = Pq.Value(idx);
 
@@ -202,17 +200,17 @@ parfor idx = 1:len
         continue;
     end
 
-    l_int = floor(lq);
-    l_dec = lq - l_int;
-    krnl_idx = round(l_dec * (n_quant - 1)) + 1; % which is the kernel we want in LUT
-    interp_ls = (0:krnl_len - 1) + margin + l_int - round(krnl_len / 2);
-    krnl_l = lut.Value(krnl_idx,:);
+    lq_int = floor(lq);
+    lq_dec = lq - lq_int;
+    krnl_idx = round(lq_dec * (n_quant - 1)) + 1; % which kernel is we want in LUT
+    interp_ls = (-krnl_len / 2 + 1 : krnl_len / 2) + margin + lq_int;
+    krnl_l = lut(krnl_idx,:);
 
-    p_int = floor(pq);
-    p_dec = pq - p_int;
-    krnl_idx = round(p_dec * (n_quant - 1)) + 1;
-    interp_ps = (0:krnl_len - 1) + margin + p_int - round(krnl_len / 2);
-    krnl_p = lut.Value(krnl_idx,:);
+    pq_int = floor(pq);
+    pq_dec = pq - pq_int;
+    krnl_idx = round(pq_dec * (n_quant - 1)) + 1;
+    interp_ps = (-krnl_len / 2 + 1 : krnl_len / 2) + margin + pq_int;
+    krnl_p = lut(krnl_idx,:);
 
     wd = margined.Value(interp_ls,interp_ps);
     result(idx) = krnl_l * wd * krnl_p';

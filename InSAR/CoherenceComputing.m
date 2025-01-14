@@ -1,4 +1,10 @@
-function coh = IfgCoherence(master, slave, windowSize)
+function coh = CoherenceComputing(master, slave, windowSize)
+
+arguments
+    master (:,:)
+    slave (:,:)
+    windowSize (1,1) {mustBeInteger} 
+end
 
 window = ones(windowSize);
 

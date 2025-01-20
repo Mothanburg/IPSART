@@ -1,5 +1,5 @@
-function rangeTime = Pixel2RangeTime(pixel, rangeDelay, samplingFreq)
+function rangeTime = Pixel2RangeTime(pixel, rangeInitTime, samplingFreq)
 
-    rangeTime = rangeDelay + (pixel - 1) / (2 * samplingFreq);
+rangeTime = rangeInitTime + (pixel - 1) / (2 * samplingFreq);
 
 end

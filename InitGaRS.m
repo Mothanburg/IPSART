@@ -47,7 +47,7 @@ function import_package(root, pkg)
 
 pkgpath = fullfile(root, pkg);
 if ~exist(pkgpath, "dir")
-    error("Package ""%s"" doesn't exist, the GaRS library may be broken.", pkg);
+    error("Package ""%s"" doesn't exist, the GaRS library may be broken", pkg);
 end
 
 addpath(pkgpath);

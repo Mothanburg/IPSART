@@ -1,4 +1,4 @@
-function result = AverageFilting(image, rowLook, colLook)
+function result = Averagelook(image, rowLook, colLook)
 
 arguments
     image (:,:) double

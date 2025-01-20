@@ -6,7 +6,7 @@ arguments
     windowSize (1,1) {mustBeInteger} 
 end
 
-window = ones(windowSize);
+window = ones(windowSize) / windowSize^2;
 
 nom = imfilter(master .* conj(slave), window);
 

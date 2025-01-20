@@ -10,79 +10,23 @@ if ~isa(M3, "PolT3")
         "the returned alpha may not make sense");
 end
 
-global gars_cp_cpu_enable
-if isempty(gars_cp_cpu_enable)
-    gars_cp_cpu_enable = true;
+global MATSAR_CLOUDEPOTTIER_ENABLE_CPU
+if isempty(MATSAR_CLOUDEPOTTIER_ENABLE_CPU)
+    MATSAR_CLOUDEPOTTIER_ENABLE_CPU = true;
 end
 
-if gars_cp_cpu_enable
+if MATSAR_CLOUDEPOTTIER_ENABLE_CPU
     try
-        [H,alpha,A] = CP_native(M3);
+        [H,alpha,A] = internal__CloudePottier_native(M3);
         return;
     catch e
         warning(e.identifier, ...
             "An error occurred when calling library, fallback to matlab\n" + ...
             "        Error message: %s", e.message);
-        gars_cp_cpu_enable = false;
+        MATSAR_CLOUDEPOTTIER_ENABLE_CPU = false;
     end
 end
 
-[H,alpha,A] = CP_matlab(M3);
-
-end
-
-
-%---------- Native function caller ----------%
-
-function [H,alpha,A] = CP_native(M3)
-
-if M3.Dtype == "double"
-    [H,alpha,A] = clib.gars.CloudePottier3d(M3.m11, M3.m22, M3.m33, ...
-        M3.m12_r, M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
-else
-    [H,alpha,A] = clib.gars.CloudePottier3f(M3.m11, M3.m22, M3.m33, ...
-        M3.m12_r, M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
-end
-
-end
-
-
-%---------- MATLAB function caller ----------%
-
-function [H,alpha,A] = CP_matlab(M3)
-
-height = M3.Height;
-width = M3.Width;
-
-H = zeros(height, width, M3.Dtype);
-alpha = zeros(height, width, M3.Dtype);
-A = zeros(height, width, M3.Dtype);
-
-M3 = parallel.pool.Constant(M3);
-parfor j = 1:width
-    for i = 1:height
-        t = M3.Value.MatAt(i, j);
-        [v,d] = eig(t);
-        d = diag(abs(d))';
-        p = d / sum(d);
-        H(i,j) = calc_entropy(p);
-        alpha(i,j) = sum(p .* acosd(abs(v(1,:))));
-        l3 = min(d);
-        l2 = sum(d) - max(d) - l3;
-        A(i,j) = (l2 - l3) / (l2 + l3);
-    end
-end
-
-end
-
-function h = calc_entropy(x)
-
-h = 0;
-len = numel(x);
-for i = 1:len
-    if x ~= 0
-        h = h - x(i) * log(x(i)) / log(len);
-    end
-end
+[H,alpha,A] = internal__CloudePottier_matlab(M3);
 
 end

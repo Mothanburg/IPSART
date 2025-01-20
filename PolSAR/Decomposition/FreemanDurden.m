@@ -1,3 +1,4 @@
+% Freeman-Durden three component decomposition
 function [Ps,Pd,Pv] = FreemanDurden(C3)
 
 arguments
@@ -10,14 +11,14 @@ B = C3.m33 - 3 * fv / 8;
 C = C3.m11 - 3 * fv / 8;
 D = conj(A);
 
-% real(ShhSvv*) > 0
+% real(ShhSvv*) > 0, surface scattering dominants
 mask1 = (C3.m13_r - fv / 8) > 0;
 alpha1 = -1;
 fd1 = real((B .* C - A .* D) ./ (A + B + C + D));
 fs1 = B - fd1;
 beta1 = (A + fd1) ./ fs1;
 
-% real(ShhSvv*) <= 0
+% real(ShhSvv*) <= 0, double-bounce scattering dominants
 mask2 = (C3.m13_r - fv / 8) <= 0;
 beta2 = 1;
 fs2 = real((A .* D - B .* C) ./ (A + D - B - C));

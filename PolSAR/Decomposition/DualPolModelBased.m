@@ -1,8 +1,19 @@
-function [ms,mv,alpha,delta] = ModelBasedDP(C2, polTx)
+% Model-based decomposition for dual-pol
+% 10.1109/TGRS.2021.3137588
+function [ms,mv,alpha,delta] = DualPolModelBased(C2, polTx)
 
 arguments
     C2 PolC2
-    polTx string
+    polTx string % The transfer polarization, must be "H" or "V"
+end
+
+switch upper(polTx)
+    case "H"
+        polTx = "H";
+    case "V"
+        polTx = "V";
+    otherwise
+        error("Invalid transfer polarization '%s'", polTx);
 end
 
 height = C2.Height;
@@ -31,19 +42,7 @@ cond1 = root1 < s1;
 cond2 = ~cond1 & (root2 >= 0);
 mv(cond1) = root1(cond1);
 mv(cond2) = root2(cond2);
-% for j=1:width
-%     for i=1:height
-%         if x1(i,j) < s1(i,j)
-%             mv(i,j) = x1(i,j);
-%         else
-%             if x2(i,j) < 0
-%                 mv(i,j) = 0;
-%             else
-%                 mv(i,j) = x2(i,j);
-%             end
-%         end
-%     end
-% end
+
 
 ms = s1 - mv;
 if polTx == "H"

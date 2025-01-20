@@ -1,3 +1,5 @@
+% Freeman-Durden three component decomposition with de-orientation
+% 10.1109/TGRS.2010.2041242
 function [Ps,Pd,Pv] = FreemanDurdenRot(T3)
 
 arguments

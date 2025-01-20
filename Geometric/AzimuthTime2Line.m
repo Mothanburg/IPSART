@@ -1,5 +1,5 @@
-funtion line = AzimuthTime2Line(azimuthTime, startTime, prf)
+function line = AzimuthTime2Line(azimuthTime, azimuthInitTime, prf)
 
-  line = (azimuthTime - startTime) * prf + 1;
+line = (azimuthTime - azimuthInitTime) * prf + 1;
 
 end

@@ -30,7 +30,7 @@ end
 if exist(filePath, "file")
     warning("The file %s exists, overwriting it.", filePath);
     delete(filePath);
-elseif ~exist(prefix, "dir")
+elseif ~exist(prefix, "dir") && prefix ~= ""
     mkdir(prefix);
 end
 

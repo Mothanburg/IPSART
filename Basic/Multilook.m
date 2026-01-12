@@ -6,6 +6,10 @@ arguments
     colLook {mustBeInteger}
 end
 
+if rowLook == 1 && colLook == 1
+    result = image;
+    return;
+end
 
 [in_rows,in_cols] = size(image);
 if in_rows < rowLook || in_cols < colLook

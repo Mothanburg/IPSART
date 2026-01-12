@@ -10,6 +10,11 @@ if ~isa(M3, "PolT3")
         "the returned alpha may not make sense");
 end
 
+if M3.Height <= 10 && M3.Width <= 10
+    [H,alpha,A] = internal__CloudePottier_matlab(M3);
+    return;
+end
+
 global MATSAR_CLOUDEPOTTIER_ENABLE_CPU
 if isempty(MATSAR_CLOUDEPOTTIER_ENABLE_CPU)
     MATSAR_CLOUDEPOTTIER_ENABLE_CPU = true;

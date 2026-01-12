@@ -1,3 +1,3 @@
-classdef ALOSDataReader < ISARDataReader
+classdef ALOSDataReader < SARDataReader
 
 end

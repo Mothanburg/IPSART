@@ -25,7 +25,7 @@ classdef OrbitPolynomial
         end
 
 
-        function T = ParamMatrixOf(obj, time, degree)
+        function T = TimeMatrix(obj, time, degree)
             arguments
                 obj OrbitPolynomial
                 time (:,1) double
@@ -35,7 +35,7 @@ classdef OrbitPolynomial
             t_norm = 4 * (time - obj.TimeRange(1)) / ...
                 diff(obj.TimeRange) - 2;
 
-            T = ones(length(t_norm), obj.Degree + 1);
+            T = ones(length(t_norm), degree + 1);
             for n = 1:degree
                 T(:,n + 1) = t_norm.^n;
             end
@@ -49,13 +49,7 @@ classdef OrbitPolynomial
                 indices (1,:) {mustBeInteger} = [1 2 3 4 5 6]
             end
 
-            t_norm = 4 * (time - obj.TimeRange(1)) / ...
-                diff(obj.TimeRange) - 2;
-
-            T = ones(length(t_norm), obj.Degree + 1);
-            for n = 1:obj.Degree
-                T(:,n + 1) = t_norm.^n;
-            end
+            T = obj.TimeMatrix(time);
 
             state = T * obj.Coeff(:,indices);
         end

@@ -5,7 +5,7 @@ arguments
     method string
 end
 
-arguments(Repeating)
+arguments (Repeating)
     varargin {mustBeNumeric}
 end
 
@@ -41,9 +41,10 @@ switch method
         end
         result = (result - c) ./ (d - c);
     case "Log"
-        a = min(bands, [], [1 2]);
-        result = 10 * log10(bands - a + 1);
-        result = result ./ max(result, [], [1 2]);
+        result = log10(bands + 1e-45);
+        a = min(result, [], [1 2]);
+        b = max(result, [], [1 2]);
+        result = (result - a) ./ (b - a);
     otherwise
         error("Unknown stretch method: %s", method);
 end

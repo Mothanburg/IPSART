@@ -1,4 +1,4 @@
-classdef GaoFen3DataReader < ISARDataReader
+classdef GaoFen3DataReader < SARDataReader
 
     methods
         

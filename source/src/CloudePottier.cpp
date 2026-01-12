@@ -12,6 +12,7 @@ static void cloude_pottier(const PolMatView<TData, Dim> &pol_mat, TData *outH,
   using TRowVec = Array<TData, Dim, 1>;
 
   constexpr TData PI = std::numbers::pi_v<TData>;
+  constexpr auto inv_log3 = static_cast<TData>(1.0) / log(3.0);
 
   int len = pol_mat.Rows * pol_mat.Cols;
 # pragma omp parallel for
@@ -32,7 +33,7 @@ static void cloude_pottier(const PolMatView<TData, Dim> &pol_mat, TData *outH,
     } else {
       outH[idx] =
           p.unaryExpr([](auto x) {
-             return x != 0 ? -x * log(x) / log(static_cast<TData>(3)) : 0;
+             return x != 0 ? -x * log(x) * inv_log3 : 0;
            }).sum();
       const TData p1 = p.maxCoeff();
       const TData p3 = p.minCoeff();

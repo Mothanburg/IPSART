@@ -15,7 +15,8 @@ for it = 1:options.MAX_ITER
     sat_v = sat_state(4:6);
 
     % acceleration of the satallite, need a derivation: a = dv / dt 
-    T = orbitPlyn.ParamMatrixOf(azimuthTime, orbitPlyn.Degree - 1);
+    % the degree of polynomial will reduce 1
+    T = orbitPlyn.TimeMatrix(azimuthTime, orbitPlyn.Degree - 1);
     sat_acc = 4 * T * orbitPlyn.Coeff(2:end,4:6) / diff(orbitPlyn.TimeRange);
 
     vec_inc = groundPos - sat_pos;

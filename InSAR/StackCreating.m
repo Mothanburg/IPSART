@@ -10,10 +10,10 @@ arguments (Repeating)
     slavePSPoint (1,2) {mustBeInteger}
 end
 
-[m_height,m_width] = size(master);
+[m_height,m_width,~] = size(master);
 
 for i = 1:length(slave)
-    [s_heights(i),s_widths(i)] = size(slave{i});
+    [s_heights(i),s_widths(i),~] = size(slave{i});
 
     offset = slavePSPoint{i} - masterPSPoint;
     pos_offset_hs(i) = offset(1);
@@ -32,7 +32,7 @@ if m_start_row >= m_end_row || m_start_col >= m_end_col
     error("The images must have an overlapping area");
 end
 
-out.image = master(m_start_row:m_end_row,m_start_col:m_end_col);
+out.image = master(m_start_row:m_end_row,m_start_col:m_end_col,:);
 out.row_skip = m_start_row - 1;
 out.col_skip = m_start_col - 1;
 varargout{1} = out;
@@ -54,7 +54,7 @@ for i = 1:length(slave)
         s_widths(i) - neg_offset_ws(i) + min(neg_offset_ws) ...
         ]);
 
-    out.image = slave_img(s_start_row:s_end_row,s_start_col:s_end_col);
+    out.image = slave_img(s_start_row:s_end_row,s_start_col:s_end_col,:);
     out.row_skip = s_start_row - 1;
     out.col_skip = s_start_col - 1;
     varargout{i + 1} = out;

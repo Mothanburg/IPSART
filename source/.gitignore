@@ -13,3 +13,6 @@ vs*/
 
 # MacOS Cache
 .DS_Store
+
+# lib files
+thirdparty

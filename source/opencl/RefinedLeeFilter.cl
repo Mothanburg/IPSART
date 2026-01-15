@@ -73,21 +73,36 @@ page_filting(int rows, int cols,
         }
     }
 
-    dtype sums[8];
-    sums[0] = mean_mat[2] + mean_mat[5] + mean_mat[8] - mean_mat[0] - mean_mat[3] - mean_mat[6];
-    sums[1] = mean_mat[1] + mean_mat[2] + mean_mat[5] - mean_mat[3] - mean_mat[6] - mean_mat[7];
-    sums[2] = mean_mat[0] + mean_mat[1] + mean_mat[2] - mean_mat[6] - mean_mat[7] - mean_mat[8];
-    sums[3] = mean_mat[0] + mean_mat[1] + mean_mat[3] - mean_mat[5] - mean_mat[7] - mean_mat[8];
-    sums[4] = mean_mat[2] + mean_mat[5] + mean_mat[8] - mean_mat[0] - mean_mat[3] - mean_mat[6];
-    sums[5] = mean_mat[3] + mean_mat[6] + mean_mat[7] - mean_mat[1] - mean_mat[2] - mean_mat[5];
-    sums[6] = mean_mat[6] + mean_mat[7] + mean_mat[8] - mean_mat[0] - mean_mat[1] - mean_mat[2];
-    sums[7] = mean_mat[5] + mean_mat[7] + mean_mat[8] - mean_mat[0] - mean_mat[1] - mean_mat[3];
+    // Calculate Prewitt id
+
+    // window id
+    dtype sums[4];
+    sums[0] = abs(mean_mat[2] + mean_mat[5] + mean_mat[8] - mean_mat[0] - mean_mat[3] - mean_mat[6]); 
+    sums[1] = abs(mean_mat[1] + mean_mat[2] + mean_mat[5] - mean_mat[3] - mean_mat[6] - mean_mat[7]);
+    sums[2] = abs(mean_mat[0] + mean_mat[1] + mean_mat[2] - mean_mat[6] - mean_mat[7] - mean_mat[8]);
+    sums[3] = abs(mean_mat[0] + mean_mat[1] + mean_mat[3] - mean_mat[5] - mean_mat[7] - mean_mat[8]);
+    //sums[4] = mean_mat[0] + mean_mat[3] + mean_mat[6] - mean_mat[2] - mean_mat[5] - mean_mat[8];
+    //sums[5] = mean_mat[3] + mean_mat[6] + mean_mat[7] - mean_mat[1] - mean_mat[2] - mean_mat[5];
+    //sums[6] = mean_mat[6] + mean_mat[7] + mean_mat[8] - mean_mat[0] - mean_mat[1] - mean_mat[2];
+    //sums[7] = mean_mat[5] + mean_mat[7] + mean_mat[8] - mean_mat[0] - mean_mat[1] - mean_mat[3];
 
     int window_id = 0;
-    __attribute__((opencl_unroll_hint)) for (int i = 1; i < 8; i++)
+    __attribute__((opencl_unroll_hint)) for (int i = 1; i < 4; i++)
     {
         window_id += isless(sums[window_id], sums[i]) * (i - window_id);
     }
+
+    dtype distance[8];
+    distance[0] = abs(mean_mat[5] - mean_mat[4]); // m23 - m22
+    distance[1] = abs(mean_mat[2] - mean_mat[4]); // m13 - m22
+    distance[2] = abs(mean_mat[1] - mean_mat[4]); // m12 - m22
+    distance[3] = abs(mean_mat[0] - mean_mat[4]); // m11 - m22
+    distance[4] = abs(mean_mat[3] - mean_mat[4]); // m21 - m22
+    distance[5] = abs(mean_mat[6] - mean_mat[4]); // m31 - m22
+    distance[6] = abs(mean_mat[7] - mean_mat[4]); // m32 - m22
+    distance[7] = abs(mean_mat[8] - mean_mat[4]); // m33 - m22
+
+    prewitt_id = isgreater(distance[window_id], distance[window_id + 4]) * 4 + window_id;
 
     dtype z_mean = 0.0;
     __attribute__((opencl_unroll_hint)) for (int i = 0; i < 7; i++)
@@ -95,7 +110,7 @@ page_filting(int rows, int cols,
         __attribute__((opencl_unroll_hint)) for (int j = 0; j < 7; j++)
         {
             z_mean += shared_mem[(local_row + i) * shared_cols + local_col + j] *
-                      prewitt[49 * window_id + i * 7 + j];
+                      prewitt[49 * prewitt_id + i * 7 + j];
         }
     }
     z_mean /= 28.0;
@@ -106,14 +121,14 @@ page_filting(int rows, int cols,
         __attribute__((opencl_unroll_hint)) for (int j = 0; j < 7; j++)
         {
             dtype z = shared_mem[(local_row + i) * shared_cols + local_col + j] *
-                      prewitt[49 * window_id + i * 7 + j];
-            z_var += pown(z - z_mean, 2);
+                      prewitt[49 * prewitt_id + i * 7 + j];
+            z_var += (z - z_mean) * (z - z_mean);
         }
     }
     z_var /= 28.0;
 
     dtype v_var = 1.0 / look_num;
-    dtype x_var = (z_var - pown(z_mean, 2) * v_var) / (1.0 + v_var);
+    dtype x_var = (z_var - z_mean * z_mean * v_var) / (1.0 + v_var);
     dtype factor = (x_var + 1e-30) / (z_var + 1e-30); // avoid nan
 
     work_group_barrier(CLK_LOCAL_MEM_FENCE);
@@ -136,7 +151,7 @@ page_filting(int rows, int cols,
         __attribute__((opencl_unroll_hint)) for (int j = 0; j < 7; j++)
         {
             mean_input += shared_mem[(local_row + i) * shared_cols + local_col + j] *
-                          prewitt[49 * window_id + i * 7 + j];
+                          prewitt[49 * prewitt_id + i * 7 + j];
         }
     }
     mean_input /= 28.0;

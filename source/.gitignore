@@ -15,4 +15,4 @@ vs*/
 .DS_Store
 
 # lib files
-thirdparty
+thirdparty/*

@@ -70,7 +70,7 @@ for k = 1:8
     z_sq_mean_all = imfilter(span_2, h, 'replicate', 'same');
     z_mean = z_mean_all(mask);
     z_sq_mean = z_sq_mean_all(mask);
-    var_z = z_sq_mean - abs(z_mean).^2;
+    var_z = z_sq_mean - z_mean.^2;
 
     % Calculate 'b'
     var_x = (var_z - z_mean.^2 * var_v) / (1 + var_v);

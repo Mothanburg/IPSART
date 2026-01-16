@@ -144,7 +144,7 @@ static int refined_lee_filter(int lookNum, int rows, int cols,
     auto shm_size = static_cast<int>(group_height) + 8;
     krnl_filter.setArg(3, shm_size);
     krnl_filter.setArg(4, shm_size);
-    krnl_filter.setArg(5, sizeof(TData) * shm_size * shm_size, nullptr);
+    krnl_filter.setArg(5, sizeof(TData) * shm_size * shm_size * 2, nullptr);
 
     cl::Buffer buf_prwt(context, Prewitt<TData>.begin(), Prewitt<TData>.end(),
                         true);

@@ -4,26 +4,55 @@ height = M.Height;
 width = M.Width;
 span = M.SPAN;
 
-% Gradient templates
+% Get Gradient Direction
+avg_krnl = ones(3) / 9;
+
 w1 = [-1,0,1;-1,0,1;-1,0,1];
 w2 = [0,1,1;-1,0,1;-1,-1,0];
 w3 = [1,1,1;0,0,0;-1,-1,-1];
 w4 = [1,1,0;1,0,-1;0,-1,-1];
-W = cat(3, w1, w2, w3, w4, fliplr(w1), w2', flipud(w3), flipud(w2));
+W = cat(3, w1, w2, w3, w4);
 
-% Using the dilated convolution to get the best Prewitt mask
-grads = zeros(height, width, 8);
-avg_krnl = ones(3) / 9;
-for k = 1:8
+grads = zeros(height, width, 4);
+for k = 1:4
+    % Using the dilated convolution to get the best mask
     w_k = zeros(5);
     w_k(1:2:5, 1:2:5) = W(:,:,k);
 
     conv_krnl = conv2(w_k, avg_krnl, 'full');
 
-    grads = imfilter(span, conv_krnl, "replicate", "same");
+    grads(:,:,k) = imfilter(span, conv_krnl, "replicate", "same");
+end
+[~, window_id] = max(grads, [], 3);
+
+% Get Prewitt ID
+d1 = [0,0,0;0,-1,1;0,0,0];
+d2 = [0,0,1;0,-1,0;0,0,0];
+d3 = [0,1,0;0,-1,0;0,0,0];
+d4 = [1,0,0;0,-1,0;0,0,0];
+d5 = fliplr(d1);
+d6 = flipud(d4);
+d7 = flipud(d3);
+d8 = flipud(d2);
+D = cat(3, d1, d2, d3, d4, d5, d6, d7, d8);
+
+deltas = zeros(height, width, 8);
+for k = 1:8
+    d_k = zeros(5);
+    d_k(1:2:5, 1:2:5) = D(:,:,k);
+
+    conv_krnl = conv2(d_k, avg_krnl, 'full');
+
+    deltas(:,:,k) = imfilter(span, conv_krnl, "replicate", "same");
 end
 
-[~, pw_id] = max(grads, [], 3);
+pw_id = zeros(height, width);
+for k = 1:4
+    mask = window_id == k;
+    del1 = squeeze(deltas(:,:,k));
+    del2 = squeeze(deltas(:,:,k + 4));
+    pw_id(mask) = 4 * (del1(mask) < del2(mask)) + window_id(mask);
+end
 
 % Prewitt masks
 pw1 = repmat([0,0,0,1,1,1,1], [7,1]);
@@ -75,7 +104,8 @@ for k = 1:8
     % Calculate 'b'
     var_x = (var_z - z_mean.^2 * var_v) / (1 + var_v);
     b = (var_x + 1e-30) ./ (var_z + 1e-30);
-    
+    b = min(0, max(b, 1));
+
     % Filt C_ij
     c_mean_all = imfilter(cij, h, 'replicate', 'same');
     c_mean = c_mean_all(mask);

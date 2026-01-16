@@ -29,7 +29,7 @@ span_calc(__global dtype *span,
 // A 7x7 refined lee filter
 __kernel void
 page_filting(int rows, int cols,
-             __global const dtype *span, // the SPAN of the PolSAR image
+             __global const dtype *span,  // the SPAN of the PolSAR image
              int shared_rows, int shared_cols, __local dtype *shared_mem,
              __constant dtype *prewitt,   // the size of prewitt operator templates is 7x7x8
              int look_num,                // look number
@@ -44,6 +44,7 @@ page_filting(int rows, int cols,
     int wg_cols = get_local_size(1);
     int local_row = get_local_id(0);
     int local_col = get_local_id(1);
+    int shared_mem_page_offset = shared_rows * shared_cols;
     for (int r = local_row; r < shared_rows; r += wg_rows)
     {
         for (int c = local_col; c < shared_cols; c += wg_cols)
@@ -51,6 +52,7 @@ page_filting(int rows, int cols,
             int row = min(max(wg_row * enqd_wg_rows + r - 3, 0), rows - 1);
             int col = min(max(wg_col * enqd_wg_cols + c - 3, 0), cols - 1);
             shared_mem[r * shared_cols + c] = span[row * cols + col];
+            shared_mem[r * shared_cols + c + shared_mem_page_offset] = input[row * cols + col];
         }
     }
 
@@ -77,14 +79,10 @@ page_filting(int rows, int cols,
 
     // window id
     dtype sums[4];
-    sums[0] = abs(mean_mat[2] + mean_mat[5] + mean_mat[8] - mean_mat[0] - mean_mat[3] - mean_mat[6]); 
-    sums[1] = abs(mean_mat[1] + mean_mat[2] + mean_mat[5] - mean_mat[3] - mean_mat[6] - mean_mat[7]);
-    sums[2] = abs(mean_mat[0] + mean_mat[1] + mean_mat[2] - mean_mat[6] - mean_mat[7] - mean_mat[8]);
-    sums[3] = abs(mean_mat[0] + mean_mat[1] + mean_mat[3] - mean_mat[5] - mean_mat[7] - mean_mat[8]);
-    //sums[4] = mean_mat[0] + mean_mat[3] + mean_mat[6] - mean_mat[2] - mean_mat[5] - mean_mat[8];
-    //sums[5] = mean_mat[3] + mean_mat[6] + mean_mat[7] - mean_mat[1] - mean_mat[2] - mean_mat[5];
-    //sums[6] = mean_mat[6] + mean_mat[7] + mean_mat[8] - mean_mat[0] - mean_mat[1] - mean_mat[2];
-    //sums[7] = mean_mat[5] + mean_mat[7] + mean_mat[8] - mean_mat[0] - mean_mat[1] - mean_mat[3];
+    sums[0] = fabs(mean_mat[2] + mean_mat[5] + mean_mat[8] - mean_mat[0] - mean_mat[3] - mean_mat[6]); 
+    sums[1] = fabs(mean_mat[1] + mean_mat[2] + mean_mat[5] - mean_mat[3] - mean_mat[6] - mean_mat[7]);
+    sums[2] = fabs(mean_mat[0] + mean_mat[1] + mean_mat[2] - mean_mat[6] - mean_mat[7] - mean_mat[8]);
+    sums[3] = fabs(mean_mat[0] + mean_mat[1] + mean_mat[3] - mean_mat[5] - mean_mat[7] - mean_mat[8]);
 
     int window_id = 0;
     __attribute__((opencl_unroll_hint)) for (int i = 1; i < 4; i++)
@@ -93,16 +91,16 @@ page_filting(int rows, int cols,
     }
 
     dtype distance[8];
-    distance[0] = abs(mean_mat[5] - mean_mat[4]); // m23 - m22
-    distance[1] = abs(mean_mat[2] - mean_mat[4]); // m13 - m22
-    distance[2] = abs(mean_mat[1] - mean_mat[4]); // m12 - m22
-    distance[3] = abs(mean_mat[0] - mean_mat[4]); // m11 - m22
-    distance[4] = abs(mean_mat[3] - mean_mat[4]); // m21 - m22
-    distance[5] = abs(mean_mat[6] - mean_mat[4]); // m31 - m22
-    distance[6] = abs(mean_mat[7] - mean_mat[4]); // m32 - m22
-    distance[7] = abs(mean_mat[8] - mean_mat[4]); // m33 - m22
+    distance[0] = fabs(mean_mat[5] - mean_mat[4]); // m23 - m22
+    distance[1] = fabs(mean_mat[2] - mean_mat[4]); // m13 - m22
+    distance[2] = fabs(mean_mat[1] - mean_mat[4]); // m12 - m22
+    distance[3] = fabs(mean_mat[0] - mean_mat[4]); // m11 - m22
+    distance[4] = fabs(mean_mat[3] - mean_mat[4]); // m21 - m22
+    distance[5] = fabs(mean_mat[6] - mean_mat[4]); // m31 - m22
+    distance[6] = fabs(mean_mat[7] - mean_mat[4]); // m32 - m22
+    distance[7] = fabs(mean_mat[8] - mean_mat[4]); // m33 - m22
 
-    prewitt_id = isgreater(distance[window_id], distance[window_id + 4]) * 4 + window_id;
+    int prewitt_id = isgreater(distance[window_id], distance[window_id + 4]) * 4 + window_id;
 
     dtype z_mean = 0.0;
     __attribute__((opencl_unroll_hint)) for (int i = 0; i < 7; i++)
@@ -130,27 +128,14 @@ page_filting(int rows, int cols,
     dtype v_var = 1.0 / look_num;
     dtype x_var = (z_var - z_mean * z_mean * v_var) / (1.0 + v_var);
     dtype factor = (x_var + 1e-30) / (z_var + 1e-30); // avoid nan
-
-    work_group_barrier(CLK_LOCAL_MEM_FENCE);
-
-    for (int r = local_row; r < shared_rows; r += wg_rows)
-    {
-        for (int c = local_col; c < shared_cols; c += wg_cols)
-        {
-            int row = min(max(wg_row * enqd_wg_rows + r - 3, 0), rows - 1);
-            int col = min(max(wg_col * enqd_wg_cols + c - 3, 0), cols - 1);
-            shared_mem[r * shared_cols + c] = input[row * cols + col];
-        }
-    }
-
-    work_group_barrier(CLK_LOCAL_MEM_FENCE);
+    factor = min(0.0, max(factor, 1.0));
 
     dtype mean_input = 0.0;
     __attribute__((opencl_unroll_hint)) for (int i = 0; i < 7; i++)
     {
         __attribute__((opencl_unroll_hint)) for (int j = 0; j < 7; j++)
         {
-            mean_input += shared_mem[(local_row + i) * shared_cols + local_col + j] *
+            mean_input += shared_mem[(local_row + i) * shared_cols + local_col + j + shared_mem_page_offset] *
                           prewitt[49 * prewitt_id + i * 7 + j];
         }
     }
@@ -159,5 +144,5 @@ page_filting(int rows, int cols,
     int g_row = get_global_id(0);
     int g_col = get_global_id(1);
     output[g_row * cols + g_col] = mean_input +
-                                   factor * (shared_mem[(local_row + 3) * shared_cols + local_col + 3] - mean_input);
+                                   factor * (shared_mem[(local_row + 3) * shared_cols + local_col + 3 + shared_mem_page_offset] - mean_input);
 }

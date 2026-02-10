@@ -70,18 +70,19 @@ classdef (Abstract) PolM2 < PolMat
 
             new_m11 = func(obj.m11, varargin{:});
             [outObj.Height,outObj.Width] = size(new_m11);
+            new_dtype = class(new_m11);
 
-            outObj.m11 = zeros(outObj.Height, outObj.Width, obj.Dtype);
+            outObj.m11 = zeros(outObj.Height, outObj.Width, new_dtype);
             outObj.m11(:,:) = new_m11;
 
             new_m22 = func(obj.m22, varargin{:});
-            outObj.m22 = zeros(outObj.Height, outObj.Width, obj.Dtype);
+            outObj.m22 = zeros(outObj.Height, outObj.Width, new_dtype);
             outObj.m22(:,:) = new_m22;
 
             new_m12 = func(obj.m12_r + 1i * obj.m12_i, varargin{:});
-            outObj.m12_r = zeros(outObj.Height, outObj.Width, obj.Dtype);
+            outObj.m12_r = zeros(outObj.Height, outObj.Width, new_dtype);
             outObj.m12_r(:,:) = real(new_m12);
-            outObj.m12_i = zeros(outObj.Height, outObj.Width, obj.Dtype);
+            outObj.m12_i = zeros(outObj.Height, outObj.Width, new_dtype);
             outObj.m12_i(:,:) = imag(new_m12);
         end
 

@@ -1,10 +1,12 @@
-function [clustered, initClasses] = UnsupervisedWishartClustering(M, initClasses, options)
+function [clustered, initClasses] = UnsupervisedPolarimetricClustering(M, classifierName, initClasses, options)
 
 arguments
     M PolMat
+    classifierName string = "Wishart"
     initClasses {mustBeInteger} = []
-    options.THRESHOLD = 0.1
+    options.THRESHOLD = 0.05
     options.MAX_ITER = inf
+    options.LOOK_NUMBER = []
 end
 
 if isa(M, "PolC3") || isa(M, "PolC2")
@@ -16,6 +18,8 @@ elseif isa(M, "PolT2")
 else
     error("Input must can be converted to covariance matrix")
 end
+
+
 
 height = M.Height;
 width = M.Width;
@@ -66,7 +70,26 @@ else
     num_classes = numel(unique(initClasses(initClasses > 0)));
 end
 
-clustered = internal__UnsupervisedWishartClustering_matlab( ...
-    C, initClasses, num_classes, options.THRESHOLD, options.MAX_ITER);
+transfer_rate = 1;
+iter_input = initClasses;
+
+iters = 1;
+len = height * width;
+
+switch (upper(classifierName))
+    case "WISHART"
+        clustered = internal__UnsupervisedWishartClustering_matlab( ...
+            C, initClasses, num_classes, options.THRESHOLD, options.MAX_ITER);
+    case "G0"
+        look_num = options.LOOK_NUMBER;
+        if isempty(options.LOOK_NUMBER)
+            warning("No look number for G0-Wishart classifier, using '1' as default.");
+            look_num = 1;
+        end
+        clustered = internal__UnsupervisedG0Clustering_matlab( ...
+            C, look_num, initClasses, num_classes, options.THRESHOLD, options.MAX_ITER);
+    otherwise
+        error("Unknown classifier name.")
+end
 
 end

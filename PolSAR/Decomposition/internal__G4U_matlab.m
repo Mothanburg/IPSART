@@ -12,13 +12,19 @@ T3 = parallel.pool.Constant(T3);
 parfor j = 1:width
     for i = 1:height
         t0 = T3.Value.MatAt(i, j);
-        two_theta = atan(2 * real(t0(2,3)) / real(t0(2,2) - t0(3,3))) / 2;
-        if isnan(two_theta)
-            r = eye(3);
-        else
-            r = [1 0 0; 0 cos(two_theta) sin(two_theta); 0 -sin(two_theta) cos(two_theta)];
+
+        theta = atan2(2 * real(t0(2,3)), t0(2,2) - t0(3,3)) / 4;
+        if theta < -pi / 4
+            theta = theta + pi / 2;
+        elseif theta > pi / 4
+            theta = theta - pi / 2;
+        elseif isnan(theta)
+            theta = 0;
         end
+
+        r = [1 0 0; 0 cos(2 * theta) sin(2 * theta); 0 -sin(2 * theta) cos(2 * theta)];
         t = r * t0 * r';
+
         t11 = real(t(1,1));
         t22 = real(t(2,2));
         t33 = real(t(3,3));

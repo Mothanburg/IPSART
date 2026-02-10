@@ -1,8 +1,8 @@
-% Yamaguchi four-component decomposition
-function [Ps,Pd,Pv,Ph] = Yamaguchi(C3)
+% Yamaguchi four-component decomposition (with negetive power elimination)
+function [Ps,Pd,Pv,Ph] = Yamaguchi(T3)
 
 arguments
-    C3 PolC3
+    T3 PolT3
 end
 
 global MATSAR_YAMAGUCHI_ENABLE_CPU
@@ -10,9 +10,9 @@ if isempty(MATSAR_YAMAGUCHI_ENABLE_CPU)
     MATSAR_YAMAGUCHI_ENABLE_CPU = true;
 end
 
-if MATSAR_YAMAGUCHI_ENABLE_CPU
+if false%MATSAR_YAMAGUCHI_ENABLE_CPU
     try
-        [Ps,Pd,Pv,Ph] = internal__Yamaguchi_native(C3);
+        [Ps,Pd,Pv,Ph] = internal__Yamaguchi_native(T3);
         return;
     catch e
         warning(e.identifier, ...
@@ -22,6 +22,6 @@ if MATSAR_YAMAGUCHI_ENABLE_CPU
     end
 end
 
-[Ps,Pd,Pv,Ph] = internal__Yamaguchi_matlab(C3);
+[Ps,Pd,Pv,Ph] = internal__Yamaguchi_matlab(T3);
 
 end

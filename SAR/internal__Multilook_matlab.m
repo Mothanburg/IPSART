@@ -1,5 +1,7 @@
 function result = internal__Multilook_matlab( ...
-    image, in_rows, in_cols, row_look, col_look)
+    image, row_look, col_look)
+
+[in_rows, in_cols] = size(image);
 
 row_strides = repmat(row_look, 1, floor(in_rows / row_look));
 row_left = rem(in_rows, row_look);

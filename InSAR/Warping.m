@@ -1,234 +1,128 @@
-function result = Warping(master, slave, gcpMaster, gcpSlave, gcpCorr, options)
-
+function result = Warping(slave, gcpMaster, gcpSlave, gcpCorr, polyn_order, method)
 arguments
-    master
     slave
-    gcpMaster
-    gcpSlave
-    gcpCorr = []
-    options.WARP_POLYNOMIAL_ORDER = 3
-    options.WARP_SOLVING_METHOD = "LS"
-    options.RESAMPLE_ESTIMATE_DOPPLER_CENTROID = false
-    options.RESAMPLE_INTERPOLATION_METHOD = "16-point sinc"
+    gcpMaster (:,2)
+    gcpSlave (:,2)
+    gcpCorr (:,1) = []
+    polyn_order {mustBeMember(polyn_order, [1 2 3 4 5])} = 2
+    method string {mustBeMember(method, ["Cubic", "Sinc"])} = "Sinc"
 end
 
-[lines,pixels] = size(slave);
-[n_gcp,~] = size(gcpMaster);
+% fitting polynomial
+[H,W] = size(slave);
+[poly_L,poly_P] = fit_polynomial_model( ...
+    gcpMaster, gcpSlave, gcpCorr, polyn_order, H, W);
 
+% calculate query
+[P_mat,L_mat] = meshgrid(1:W, 1:H);
+[Lq,Pq] = apply_polynomial_model( ...
+    poly_L, poly_P, L_mat, P_mat, polyn_order, H, W);
 
-% normalize master coordinates into [-2 2] for stability
-order = options.WARP_POLYNOMIAL_ORDER;
-
-mst_lines_norm = normalize2(gcpMaster(:,1), 1, lines);
-mst_pixels_norm = normalize2(gcpMaster(:,2), 1, pixels);
-A = create_polyn_param_mat( ...
-    mst_lines_norm, ...
-    mst_pixels_norm, ...
-    order ...
-    );
-
-if ~isempty(gcpCorr)
-    Q = diag(gcpCorr / mean(gcpCorr)); % weighting matrix
+% warp
+if method == "Sinc"
+    result = sinc_interp(slave, Pq, Lq, 8);
+elseif method == "Cubic"
+    GI = griddedInterpolant({1:H, 1:W}, slave, 'cubic', 'none');
+    result = GI(Lq, Pq);
 else
-    Q = eye(n_gcp);
+    result = [];
 end
-
-switch (options.WARP_SOLVING_METHOD)
-    case "LS"
-        warp_coeff_l = (A' * Q * A) \ ...
-            (A' * Q * (gcpSlave(:,1) - gcpMaster(:,1)));
-        warp_coeff_p = (A' * Q * A) \ ...
-            (A' * Q * (gcpSlave(:,2) - gcpMaster(:,2)));
-    otherwise
-        error("Unknown error")
-end
-
-
-% Get quering coordinates in slave image
-[P,L] = meshgrid(1:pixels, 1:lines);
-
-norm_lines = normalize2(L(:), 1, lines);
-norm_pixels = normalize2(P(:), 1, pixels);
-
-dL = apply_polyn(warp_coeff_l, norm_lines, norm_pixels, order);
-dL = reshape(dL, size(L));
-
-dP = apply_polyn(warp_coeff_p, norm_lines, norm_pixels, order);
-dP = reshape(dP, size(P));
-
-Pq = P + dP;
-Lq = L + dL;
-
-
-% Resampling
-interp_method = lower(options.RESAMPLE_INTERPOLATION_METHOD);
-switch interp_method
-    case {"nearest", "linear"}
-        result = interp2( ...
-            P, L, ...
-            slave, ...
-            Pq, Lq, ...
-            interp_method, ...
-            nan ...
-            );
-    case "6-point cubic"
-        krnl_lut = construct_interp_table(@cc_6p, 6);
-        result = interp_image(slave, Lq, Pq, krnl_lut, nan);
-    case "8-point sinc"
-        krnl_lut = construct_interp_table(@sinc_8p, 8);
-        result = interp_image(slave, Lq, Pq, krnl_lut, nan);
-    case "16-point sinc"
-        krnl_lut = construct_interp_table(@sinc_16p, 16);
-        result = interp_image(slave, Lq, Pq, krnl_lut, nan);
-    otherwise
-        error("Unknown error");
-end
-
 
 end
 
 
-
-%----------------- Normalize coordinates into [-2 2] -----------------%
-function result = normalize2(value, low, high)
-    result = 4 * (value - low) ./ (high - low) - 2;
+% --- Polynomial fitting ---
+function [coeffL, coeffP] = fit_polynomial_model(mst, slv, corr, order, H, W)
+% normalize
+L_norm = 2 * (mst(:,1) - 1) / (H - 1) - 1;
+P_norm = 2 * (mst(:,2) - 1) / (W - 1) - 1;
+% fitting
+A = construct_vander(L_norm, P_norm, order);
+if isempty(corr)
+    A_combine = A;
+    L_combine = slv(:,1);
+    P_combine = slv(:,2);
+else
+    Q = diag(corr / mean(corr));
+    A_combine = A' * Q * A;
+    L_combine = A' * Q * slv(:,1);
+    P_combine = A' * Q * slv(:,2);
+end
+coeffL = A_combine \ L_combine;
+coeffP = A_combine \ P_combine;
 end
 
+function [Lq, Pq] = apply_polynomial_model(cL, cP, L, P, order, H, W)
+Ln = 2 * (L(:) - 1) / (H - 1) - 1;
+Pn = 2 * (P(:) - 1) / (W - 1) - 1;
+A = construct_vander(Ln, Pn, order);
+Lq = reshape(A * cL, size(L));
+Pq = reshape(A * cP, size(P));
+end
 
-
-%----------------- Create Polynomial Parameter Matrix -----------------%
-function A = create_polyn_param_mat(lines, pixels, order)
-
-len = length(lines);
-A = zeros(len, ((order + 1)^2 + order + 1) / 2);
-idx = 1;
+function A = construct_vander(L, P, order)
+n = length(L);
+% generate polynomial terms
+num_terms = (order + 1) * (order + 2) / 2;
+A = zeros(n, num_terms);
+col = 1;
 for i = 0:order
     for j = 0:i
-        A(:,idx) = lines.^(i - j) .* pixels.^(j);
-        idx = idx + 1;
+        A(:, col) = (L.^(i-j)) .* (P.^j);
+        col = col + 1;
     end
 end
-
-end
-
-function results = apply_polyn(coeff, lines, pixels, order)
-
-A = create_polyn_param_mat(lines, pixels, order);
-results = A * coeff;
-
 end
 
 
+% --- Sinc interpolation ---
+function ResultImage = sinc_interp(image, Pq, Lq, kernel_len)
+% Calculate Sinc LUT
+INTERVAL = 127;
+NInterval = INTERVAL + 1;
+dx = 1 / INTERVAL;
+x_axis = (1 - kernel_len / 2 : kernel_len / 2)';
+x_axis_mat = zeros(kernel_len, NInterval);
+temp_x = x_axis;
+for i = 1 : NInterval
+    x_axis_mat(:, i) = temp_x;
+    temp_x = temp_x - dx;
+end
+sinc_mat = sinc(x_axis_mat);
+sinc_mat = sinc_mat ./ sum(sinc_mat, 1); % normalize
 
-%----------------- Construct Interpolation LUT -----------------%
-function [value,axis] = construct_interp_table(krnlFunc, krnlLen)
-
-n_quant = 128;
-spacing = 1 / (n_quant - 1);
-base_axis = (1:krnlLen) - krnlLen / 2;
-
-value = zeros(n_quant, krnlLen);
-axis = zeros(n_quant, krnlLen);
-for idx = 1:n_quant
-    krnl_axis = base_axis - spacing * (idx - 1);
-    axis(idx,:) = krnl_axis;
-    value(idx,:) = krnlFunc(krnl_axis);
+% 2d interpolation
+% horizontal
+tmp_res = sinc_resample_1d(image, Pq, sinc_mat, INTERVAL, 'h');
+% vertical
+ResultImage = sinc_resample_1d(tmp_res, Lq, sinc_mat, INTERVAL, 'v');
 end
 
-end
+function out = sinc_resample_1d(img, query, sinc_lut, INTERVAL, mode)
+[lines, pixels] = size(img);
+out = zeros(lines, pixels, 'like', img);
+K = size(sinc_lut, 1); % KernelLength
+half_K = K / 2;
 
-function value = sinc_8p(axis)
+% get index
+int_idx = floor(query);
+frac_idx = query - int_idx;
 
-value = sinc(axis);
-value = value / sum(value);
+% find matching kernel
+krnl_idx = round(frac_idx * INTERVAL) + 1;
+krnl_idx(krnl_idx > (INTERVAL + 1)) = INTERVAL + 1;
+krnl_idx(krnl_idx < 1) = 1;
 
-end
-
-function value = sinc_16p(axis)
-
-value = sinc(axis);
-value = value / sum(value);
-
-end
-
-function value = cc_6p(axis)
-
-alpha = -0.5;
-beta = 0.5;
-value = zeros(1, 6);
-for i = 1:6
-    x = abs(axis(i));
-    if x < 1
-        value(i) = (alpha - beta + 2) * x^3 - (alpha - beta + 3) * x^2 + 1;
-    elseif x < 2
-        value(i) = alpha * x^3 - (5 * alpha - beta) * x^2 + ...
-            (8 * alpha - 3 * beta) * x^2 - (4 * alpha - 2 * beta);
-    elseif x < 3
-        value(i) = beta * x^3 - 8 * beta * x^2 + 21 * beta * x^2 - 18 * beta;
+% interp on the whole image
+for k = -half_K + 1 : half_K
+    if mode == 'h'
+        neighbor_idx = min(max(int_idx + k, 1), pixels);
+        W = reshape(sinc_lut(k + half_K, krnl_idx(:)), lines, pixels);
+        out = out + img((neighbor_idx-1)*lines + (1:lines)') .* W;
     else
-        value(i) = 0;
+        neighbor_idx = min(max(int_idx + k, 1), lines);
+        W = reshape(sinc_lut(k + half_K, krnl_idx(:)), lines, pixels);
+        out = out + img((0:pixels-1)*lines + neighbor_idx) .* W;
     end
 end
-value = value / sum(value);
-
 end
-
-
-
-%----------------- Image Interpolation -----------------%
-function result = interp_image(image, Lq, Pq, lut, extraVal)
-
-result = zeros(size(Lq));
-[lines,pixels] = size(Lq);
-len = lines * pixels;
-
-[n_quant,krnl_len] = size(lut);
-
-margin = round(krnl_len / 2);
-margined = zeros(lines + krnl_len, pixels + krnl_len);
-margined(margin + (1:lines),margin + (1:pixels)) = image;
-
-Lq = parallel.pool.Constant(Lq);
-Pq = parallel.pool.Constant(Pq);
-margined = parallel.pool.Constant(margined);
-parfor idx = 1:len
-    lq = Lq.Value(idx);
-    pq = Pq.Value(idx);
-
-    if lq < 1 || lq > lines || pq < 1 || pq > pixels
-        result(idx) = extraVal;
-        continue;
-    end
-
-    lq_int = floor(lq);
-    lq_dec = lq - lq_int;
-    krnl_idx = round(lq_dec * (n_quant - 1)) + 1; % which kernel is we want in LUT
-    interp_ls = (-krnl_len / 2 + 1 : krnl_len / 2) + margin + lq_int;
-    krnl_l = lut(krnl_idx,:);
-
-    pq_int = floor(pq);
-    pq_dec = pq - pq_int;
-    krnl_idx = round(pq_dec * (n_quant - 1)) + 1;
-    interp_ps = (-krnl_len / 2 + 1 : krnl_len / 2) + margin + pq_int;
-    krnl_p = lut(krnl_idx,:);
-
-    wd = margined.Value(interp_ls,interp_ps);
-    result(idx) = krnl_l * wd * krnl_p';
-
-end
-
-
-end
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -100,14 +100,17 @@ parfor j = 1:width
             fd = D + abs(C)^2 / D;
         end
 
-        if fs > 0 && fd < 0
+        if fs >= 0 && fd < 0
             fd = 0;
             fs = tp - fv - fh;
-        elseif fs < 0 && fd > 0
+        elseif fs < 0 && fd >= 0
             fs = 0;
             fd = tp - fv - fh;
         elseif fs < 0 && fd < 0 % impossible
-            error("Unknown error");
+            fs = nan;
+            fd = nan;
+            fv = nan;
+            fh = nan;
         end
 
         Ps(i,j) = real(fs);

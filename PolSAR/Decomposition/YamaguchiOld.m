@@ -13,7 +13,7 @@ Pd = zeros(height, width, C3.Dtype);
 Pv = zeros(height, width, C3.Dtype);
 Ph = zeros(height, width, C3.Dtype);
 
-for j = 1:width
+parfor j = 1:width
     for i = 1:height
         c = C3.MatAt(i, j);
 

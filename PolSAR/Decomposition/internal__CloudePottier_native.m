@@ -1,11 +1,17 @@
-function [H,alpha,A] = internal__CloudePottier_native(M3)
+function [H,alpha,A] = internal__CloudePottier_native(M)
 
-if M3.Dtype == "double"
-    [H,alpha,A] = clib.gars.CloudePottier3d(M3.m11, M3.m22, M3.m33, ...
-        M3.m12_r, M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
+global IPSARTMexHost;
+if isempty(IPSARTMexHost)
+    IPSARTMexHost = mexhost();
+end
+
+if isa(M, "PolM2")
+    [H,alpha,A] = IPSARTMexHost.feval("internal__mex_bridge", "CloudePottier", ...
+        M.m11, M.m22, M.m12_r, M.m12_i);
 else
-    [H,alpha,A] = clib.gars.CloudePottier3f(M3.m11, M3.m22, M3.m33, ...
-        M3.m12_r, M3.m13_r, M3.m23_r, M3.m12_i, M3.m13_i, M3.m23_i);
+    [H,alpha,A] = IPSARTMexHost.feval("internal__mex_bridge", "CloudePottier", ...
+        M.m11, M.m22, M.m33, M.m12_r, M.m13_r, M.m23_r, M.m12_i, M.m13_i, ...
+        M.m23_i);
 end
 
 end

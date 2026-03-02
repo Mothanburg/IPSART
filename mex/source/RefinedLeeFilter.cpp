@@ -246,10 +246,14 @@ vector<data::Array> RefinedLeeFilter(const vector<data::Array> &input,
       refined_lee_filter<T, 3>(in_arr, look_num, out_elements);
     }
 
-    return out_elements | views::transform([&](const auto &e) {
-             return af.createArray(in_dims, e.begin(), e.end());
-           }) |
-           ranges::to<vector<data::Array>>();
+    vector<data::Array> result;
+    result.reserve(n_elements);
+    for (size_t idx = 0; idx < n_elements; idx++) {
+      result.push_back(af.createArray(in_dims, out_elements[idx].begin(),
+                                      out_elements[idx].end()));
+      vector<T>().swap(out_elements[idx]); // free the memory by advance
+    }
+    return result;
   };
 
   if (in_type == data::ArrayType::SINGLE) {

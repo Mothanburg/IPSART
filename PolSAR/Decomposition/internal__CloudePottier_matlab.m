@@ -7,10 +7,9 @@ H = zeros(height, width, M.Dtype);
 alpha = zeros(height, width, M.Dtype);
 A = zeros(height, width, M.Dtype);
 
-M = parallel.pool.Constant(M);
 parfor j = 1:width
     for i = 1:height
-        t = M.Value.MatAt(i, j);
+        t = M.MatAt(i, j);
         [v,d] = eig(t);
         d = diag(abs(d))';
         p = d / sum(d);

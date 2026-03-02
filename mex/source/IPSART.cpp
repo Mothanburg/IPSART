@@ -50,7 +50,7 @@ public:
     assert(inputs[0].getType() == data::ArrayType::MATLAB_STRING);
     const data::MATLABString method_name =
         data::TypedArray<data::MATLABString>(inputs[0])[0];
-    assert(method_name.has_value());
+    assert(method_name.has_value());    
 
     try {
       // enter input arguments

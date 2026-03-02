@@ -14,7 +14,7 @@ classdef (Abstract) PolMat
     methods (Abstract)
         mat = MatAt(obj, row, col)
         page = PageAt(obj, x, y)
-        outObj = MapPage(obj, func)
+        outObj = MapPage(obj, func) % the func must be a linear operator
     end
 
 end

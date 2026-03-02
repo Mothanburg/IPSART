@@ -17,3 +17,9 @@ CppProperties.json
 
 # lib files
 thirdparty/*
+
+# auto generated
+/include/autogen/
+
+# only for intellisense, not for build
+xmake.lua

@@ -29,15 +29,15 @@ The main packages (imported by InitIPSART) are:
 
 Performance-critical functions are implemented in C++ and compiled as MATLAB MEX binaries located in `mex/source/`:
 
-| MEX Function | Purpose |
-|--------------|---------|
-| CloudePottier | Cloude-Pottier decomposition |
-| Yamaguchi | Yamaguchi decomposition |
-| G4U | Four-component decomposition |
-| Multilook | Multi-looking processing |
-| RefinedLeeFilter | Refined Lee filter |
+| MEX Function     | Purpose                      |
+| ---------------- | ---------------------------- |
+| CloudePottier    | Cloude-Pottier decomposition |
+| Yamaguchi        | Yamaguchi decomposition      |
+| G4U              | Four-component decomposition |
+| Multilook        | Multi-looking processing     |
+| RefinedLeeFilter | Refined Lee filter           |
 
-The MEX bridge is in `mex/source/IPSART.cpp` - it dispatches method calls based on the first input argument.
+The MEX bridge is in `mex/source/IPSART.cpp` - it implements the matlab::mex::Function class, dispatches all method calls.
 
 ### Building MEX Functions
 
@@ -51,11 +51,11 @@ This compiles all C++ sources in `mex/source/*.cpp` and outputs to the `bin` dir
 
 Requirements:
 - MATLAB
-- A C++ compiler on Windows (now only available for MSVC compiler)
+- A C++ compiler on Windows (only supports MSVC compiler now)
 - OpenCL SDK
 - Eigen
 
-The `mex/xmake.lua` file provides xmake configuration just for IntelliSense, it doesn't do anything on building.
+The OpenCL SDK and Eigen are placed in `mex/thirdparty`.
 
 ### OpenCL Kernels
 

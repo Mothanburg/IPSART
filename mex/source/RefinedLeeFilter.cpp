@@ -174,16 +174,20 @@ refined_lee_filter(const vector<data::TypedArray<Float>> &in_elements,
   size_t group_height = std::floor(std::sqrt(static_cast<double>(max_size)));
   cl::NDRange group_size(group_height, group_height);
 
-  // set in/out buffers
-  constexpr int MatSize = Dim * Dim;
-  std::array<cl::Buffer, MatSize> buf_inputs, buf_outputs;
-  for (auto idx = 0; idx < MatSize; idx++) {
+  // set in/out buffers - only need min inputs for span_calc + 1 reusable output
+  constexpr int MinInputs = (Dim == 2) ? 2 : 3;
+  constexpr int BufCount = MinInputs + 1;
+  std::array<cl::Buffer, BufCount> buf_inputs;
+  cl::Buffer buf_output;
+
+  // Initialize input buffers for span_calc
+  for (auto idx = 0; idx < MinInputs; idx++) {
     auto ref_element = marray_to_span(in_elements[idx]);
     buf_inputs[idx] =
         cl::Buffer(context, ref_element.begin(), ref_element.end(), true);
-    buf_outputs[idx] =
-        cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(Float) * total_len);
   }
+  // Reusable output buffer
+  buf_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(Float) * total_len);
 
   // calculate span
   cl::Buffer buf_span(context, CL_MEM_READ_WRITE, sizeof(Float) * total_len);
@@ -195,6 +199,8 @@ refined_lee_filter(const vector<data::TypedArray<Float>> &in_elements,
   }
   queue.enqueueNDRangeKernel(krnl_span_calc, cl::NullRange, global_size,
                              group_size);
+  // No explicit finish() needed - in-order queue guarantees span_calc completes
+  // before filter kernel starts
 
   // refined lee filting
   krnl_filter.setArg(0, rows);
@@ -208,12 +214,26 @@ refined_lee_filter(const vector<data::TypedArray<Float>> &in_elements,
                       PrewittMask<Float>.end(), true);
   krnl_filter.setArg(6, buf_prwt);
   krnl_filter.setArg(7, look_num);
-  for (auto idx = 0; idx < MatSize; idx++) {
-    krnl_filter.setArg(8, buf_inputs[idx]);
-    krnl_filter.setArg(9, buf_outputs[idx]);
+
+  // For each input element: upload to buffer, run kernel, read result
+  const auto n_elements = in_elements.size();
+  for (auto idx = 0; idx < n_elements; idx++) {
+    // Reuse input buffer at index 0 for subsequent elements (after span_calc is done)
+    if (idx >= MinInputs) {
+      auto ref_element = marray_to_span(in_elements[idx]);
+      // Copy data into existing buffer
+      queue.enqueueWriteBuffer(buf_inputs[0], true, 0,
+                               sizeof(Float) * total_len,
+                               ref_element.data());
+    } else {
+      // First MinInputs elements already in buffers from initialization
+    }
+    // Reuse single output buffer
+    krnl_filter.setArg(8, buf_inputs[idx < MinInputs ? idx : 0]);
+    krnl_filter.setArg(9, buf_output);
     queue.enqueueNDRangeKernel(krnl_filter, cl::NullRange, global_size,
                                group_size);
-    queue.enqueueReadBuffer(buf_outputs[idx], false, 0,
+    queue.enqueueReadBuffer(buf_output, true, 0,
                             sizeof(Float) * total_len,
                             out_elements[idx].data());
   }

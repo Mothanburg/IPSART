@@ -9,7 +9,7 @@
 __kernel void
 multilook(int input_rows, __global const dtype *input,
           int output_rows, __global dtype *output,
-          int row_look, int col_look)
+          int row_look, int col_look, dtype inv_look)
 {
     int row_out = get_global_id(0);
     int col_out = get_global_id(1);
@@ -18,13 +18,14 @@ multilook(int input_rows, __global const dtype *input,
     int col_in = col_out * col_look;
 
     dtype sum = 0;
-    for (int dr = 0; dr < row_look; dr++)
+    for (int dc = 0; dc < col_look; dc++)
     {
-        for (int dc = 0; dc < col_look; dc++)
+        int col_offset = input_rows * (col_in + dc) + row_in;
+        for (int dr = 0; dr < row_look; dr++)
         {
-            sum += input[input_rows * (col_in + dc) + row_in + dr];
+            sum += input[col_offset + dr];
         }
     }
 
-    output[output_rows * col_out + row_out] = sum / (row_look * col_look);
+    output[output_rows * col_out + row_out] = sum * inv_look;
 }

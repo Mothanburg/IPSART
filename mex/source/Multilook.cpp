@@ -1,4 +1,5 @@
 #include "IPSART.h"
+#include "ocl.hpp"
 #include "util.hpp"
 
 #include <cmath>
@@ -7,10 +8,6 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
-
-#define CL_HPP_TARGET_OPENCL_VERSION 200
-#define CL_HPP_ENABLE_EXCEPTIONS
-#include <CL/opencl.hpp>
 
 #include "autogen/Multilook.cl.h"
 
@@ -23,56 +20,58 @@ template <typename Number>
   requires std::is_same_v<Number, int32_t> || std::is_floating_point_v<Number>
 static TResult<Number> multilook(const data::TypedArray<Number> &input,
                                  int row_look, int col_look) {
-  // initialize OpenCL
-  static cl::Context context = cl::Context::getDefault();
-  static cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
-  static cl::CommandQueue queue(context, device);
+  // 获取 OpenCLManager 实例
+  auto &ocl = ipsart::ocl::OpenCLManager::instance();
 
-  // Compile the program
-  static cl::Program program = [&]<typename Ty>() {
-    cl::Program p(context, SRC_MULTILOOK);
-    if constexpr (std::is_same_v<Ty, double>) {
-      p.build(device, "-cl-std=CL2.0 -DENABLE_FP64");
-    } else {
-      p.build(device, "-cl-std=CL2.0");
-    }
-    return p;
-  }.template operator()<Number>();
+  // 编译程序
+  string build_opts = is_same_v<Number, double> ? "-cl-std=CL2.0 -DENABLE_FP64"
+                                                : "-cl-std=CL2.0";
+  cl::Program program = ocl.getProgram("Multilook", build_opts, SRC_MULTILOOK);
 
-  // prepare kernel
-  static cl::Kernel krnl(program, "multilook");
+  // 创建 kernel
+  cl::Kernel krnl(program, "multilook");
 
-  // Calculate paramout dimensions
+  // 计算输出图像的尺寸
   auto in_dim = input.getDimensions();
   int in_rows = in_dim[0];
   int in_cols = in_dim[1];
   int out_rows = in_rows / row_look;
   int out_cols = in_cols / col_look;
 
-  // create buffers
-  auto ref_input = marray_to_span(input);
-  cl::Buffer buf_input(context, ref_input.begin(), ref_input.end(), true);
+  // 创建 buffer
+  auto ref_input = ipsart::marray_to_span(input);
+  cl::Buffer buf_input(ocl.context(), ref_input.begin(), ref_input.end(), true);
 
   int out_len = out_rows * out_cols;
   vector<Number> result(out_len);
-  cl::Buffer buf_output(context, CL_MEM_WRITE_ONLY, sizeof(Number) * out_len);
+  cl::Buffer buf_output(ocl.context(), CL_MEM_WRITE_ONLY,
+                        sizeof(Number) * out_len);
 
-  // Prepare to execute the kernel
+  // 调用内核
   cl::NDRange global_size(out_rows, out_cols);
+  Number inv_look = static_cast<Number>(1.0) / (row_look * col_look);
   krnl.setArg(0, in_rows);
   krnl.setArg(1, buf_input);
   krnl.setArg(2, out_rows);
   krnl.setArg(3, buf_output);
   krnl.setArg(4, row_look);
   krnl.setArg(5, col_look);
+  krnl.setArg(6, inv_look);
 
-  queue.enqueueNDRangeKernel(krnl, cl::NullRange, global_size);
-  queue.enqueueReadBuffer(buf_output, false, 0, sizeof(Number) * out_len,
-                          result.data());
-  queue.finish();
+  cl::Event ev_multilook;
+  ocl.queue().enqueueNDRangeKernel(krnl, cl::NullRange, global_size,
+                                   cl::NullRange, nullptr, &ev_multilook);
+
+  vector<cl::Event> wait_events{ev_multilook};
+  ocl.queue().enqueueReadBuffer(buf_output, false, 0, sizeof(Number) * out_len,
+                                result.data(), &wait_events);
+
+  ocl.queue().finish();
 
   return {result, out_rows, out_cols};
 }
+
+namespace ipsart {
 
 vector<data::Array> Multilook(const vector<data::Array> &input,
                               data::ArrayFactory &af) {
@@ -104,3 +103,5 @@ vector<data::Array> Multilook(const vector<data::Array> &input,
     return execute.template operator()<double>();
   }
 }
+
+} // namespace ipsart

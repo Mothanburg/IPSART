@@ -7,19 +7,18 @@
 #include <ranges>
 #include <vector>
 
-#include "omp.h"
-
-#include <mex.hpp>
-
 #include <Eigen/Dense>
+
+#include "omp.h"
 
 using namespace std;
 using namespace matlab;
 using namespace Eigen;
 
 template <typename Float, int Dim>
-static void cloude_pottier(const PolMatView<Float, Dim> &T, vector<double> &H,
-                           vector<double> &a, vector<double> &A) {
+static void cloude_pottier(const ipsart::PolMatView<Float, Dim> &T,
+                           vector<double> &H, vector<double> &a,
+                           vector<double> &A) {
   using Matrix = Matrix<std::complex<double>, Dim, Dim>;
   using Row = Array<double, Dim, 1>;
 
@@ -56,6 +55,8 @@ static void cloude_pottier(const PolMatView<Float, Dim> &T, vector<double> &H,
   }
 }
 
+namespace ipsart {
+
 vector<data::Array> CloudePottier(const vector<data::Array> &input,
                                   data::ArrayFactory &af) {
   auto in_num = input.size();
@@ -90,3 +91,5 @@ vector<data::Array> CloudePottier(const vector<data::Array> &input,
           af.createArray(in_dims, a.begin(), a.end()),
           af.createArray(in_dims, A.begin(), A.end())};
 }
+
+} // namespace ipsart

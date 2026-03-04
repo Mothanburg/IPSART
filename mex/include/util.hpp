@@ -5,6 +5,7 @@
 
 #include <array>
 #include <complex>
+#include <cstddef>
 #include <ranges>
 #include <span>
 #include <stdexcept>
@@ -16,6 +17,8 @@
 
 #include <Eigen/Dense>
 
+namespace ipsart {
+namespace detail {
 template <typename Ty>
 inline void check_contiguous(const matlab::data::TypedArray<Ty> &arr) {
 #ifdef CHECK_CONTIGUOUS
@@ -27,10 +30,11 @@ inline void check_contiguous(const matlab::data::TypedArray<Ty> &arr) {
   }
 #endif
 }
+} // namespace detail
 
 template <typename Ty>
 inline std::span<Ty> marray_to_span(const matlab::data::TypedArray<Ty> &arr) {
-  check_contiguous(arr);
+  detail::check_contiguous(arr);
   auto src_ptr = const_cast<Ty *>(std::to_address(arr.begin()));
   auto size = arr.getNumberOfElements();
   return std::span(src_ptr, size);
@@ -106,5 +110,10 @@ struct PolMatView {
   int rows, cols;
   size_t total_elements;
 };
+
+} // namespace ipsart
+
+
+
 
 #endif

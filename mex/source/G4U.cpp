@@ -8,18 +8,16 @@
 #include <ranges>
 #include <vector>
 
-#include "omp.h"
-
-#include <mex.hpp>
-
 #include <Eigen/Dense>
+
+#include "omp.h"
 
 using namespace std;
 using namespace matlab;
 using namespace Eigen;
 
 template <typename Float>
-static void g4u(const PolMatView<Float, 3> &T, vector<double> &Ps,
+static void g4u(const ipsart::PolMatView<Float, 3> &T, vector<double> &Ps,
                 vector<double> &Pd, vector<double> &Pv, vector<double> &Ph) {
   using Complex = std::complex<double>;
   using Matrix = Eigen::Matrix<Complex, 3, 3>;
@@ -148,6 +146,8 @@ static void g4u(const PolMatView<Float, 3> &T, vector<double> &Ps,
   }
 }
 
+namespace ipsart {
+
 vector<data::Array> G4U(const vector<data::Array> &input,
                         data::ArrayFactory &af) {
   auto in_size = input.size();
@@ -177,3 +177,5 @@ vector<data::Array> G4U(const vector<data::Array> &input,
           af.createArray(in_dims, Pv.begin(), Pv.end()),
           af.createArray(in_dims, Ph.begin(), Ph.end())};
 }
+
+} // namespace ipsart

@@ -8,18 +8,16 @@
 #include <ranges>
 #include <vector>
 
-#include "omp.h"
-
-#include <mex.hpp>
-
 #include <Eigen/Dense>
+
+#include "omp.h"
 
 using namespace std;
 using namespace matlab;
 using namespace Eigen;
 
 template <typename Float>
-static void yamaguchi(const PolMatView<Float, 3> &T, vector<double> &Ps,
+static void yamaguchi(const ipsart::PolMatView<Float, 3> &T, vector<double> &Ps,
                       vector<double> &Pd, vector<double> &Pv,
                       vector<double> &Ph) {
   using Complex = std::complex<double>;
@@ -155,6 +153,8 @@ static void yamaguchi(const PolMatView<Float, 3> &T, vector<double> &Ps,
   }
 }
 
+namespace ipsart {
+
 vector<data::Array> Yamaguchi(const vector<data::Array> &input,
                               data::ArrayFactory &af) {
   auto in_type = input[0].getType();
@@ -183,3 +183,5 @@ vector<data::Array> Yamaguchi(const vector<data::Array> &input,
           af.createArray(in_dims, Pv.begin(), Pv.end()),
           af.createArray(in_dims, Ph.begin(), Ph.end())};
 }
+
+} // namespace ipsart

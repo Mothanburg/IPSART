@@ -1,134 +1,93 @@
 #include "IPSART.h"
+#include "ocl.hpp"
 #include "util.hpp"
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <ranges>
 #include <span>
+#include <string>
 #include <type_traits>
 #include <vector>
-
-#define CL_HPP_TARGET_OPENCL_VERSION 200
-#define CL_HPP_ENABLE_EXCEPTIONS
-#include <CL/opencl.hpp>
 
 #include "autogen/RefinedLeeFilter.cl.h"
 
 using namespace std;
 using namespace matlab;
 
+/// Prewitt 边缘检测算子 (8个方向, 7x7 窗口, 列优先存储)
+/// 用于 Refined Lee 滤波器的边缘检测
+template <typename Float>
+inline constexpr std::array<Float, 7 * 7 * 8> PrewittMask{
 // clang-format off
-// Prewitt operators (Col-major)
-template<typename Float>
-constexpr std::array<Float, 7 * 7 * 8> PrewittMask {
-// Prewitt 1
-// 0, 0, 0, 1, 1, 1, 1,
-// 0, 0, 0, 1, 1, 1, 1,
-// 0, 0, 0, 1, 1, 1, 1,
-// 0, 0, 0, 1, 1, 1, 1,
-// 0, 0, 0, 1, 1, 1, 1,
-// 0, 0, 0, 1, 1, 1, 1,
-// 0, 0, 0, 1, 1, 1, 1,
+// Prewitt 1 (水平向右)
 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 
 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0,
+1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 
 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1,
-// Prewitt 2
-// 1, 1, 1, 1, 1, 1, 1,
-// 0, 1, 1, 1, 1, 1, 1,
-// 0, 0, 1, 1, 1, 1, 1,
-// 0, 0, 0, 1, 1, 1, 1,
-// 0, 0, 0, 0, 1, 1, 1,
-// 0, 0, 0, 0, 0, 1, 1,
-// 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0,
+// Prewitt 2 (对角线 右下)
+1, 0, 0, 0, 0, 0, 0, 
 1, 1, 0, 0, 0, 0, 0,
-1, 1, 1, 0, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 1, 1, 0, 0,
-1, 1, 1, 1, 1, 1, 0,
+1, 1, 1, 0, 0, 0, 0, 
+1, 1, 1, 1, 0, 0, 0, 
+1, 1, 1, 1, 1, 0, 0, 
+1, 1, 1, 1, 1, 1, 0, 
 1, 1, 1, 1, 1, 1, 1,
-// Prewitt 3
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
-// 0, 0, 0, 0, 0, 0, 0,
-// 0, 0, 0, 0, 0, 0, 0,
-// 0, 0, 0, 0, 0, 0, 0,
+// Prewitt 3 (垂直向下)
+1, 1, 1, 1, 0, 0, 0, 
+1, 1, 1, 1, 0, 0, 0, 
+1, 1, 1, 1, 0, 0, 0, 
+1, 1, 1, 1, 0, 0, 0, 
+1, 1, 1, 1, 0, 0, 0, 
+1, 1, 1, 1, 0, 0, 0, 
 1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 0,
-// Prewitt 4
-1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 0,
-1, 1, 1, 1, 1, 0, 0,
-1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 0, 0, 0, 0,
-1, 1, 0, 0, 0, 0, 0,
+// Prewitt 4 (对角线 左下)
+1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 0, 
+1, 1, 1, 1, 1, 0, 0, 
+1, 1, 1, 1, 0, 0, 0, 
+1, 1, 1, 0, 0, 0, 0, 
+1, 1, 0, 0, 0, 0, 0, 
 1, 0, 0, 0, 0, 0, 0,
-// Prewitt 5
-// 1, 1, 1, 1, 0, 0, 0,
-// 1, 1, 1, 1, 0, 0, 0,
-// 1, 1, 1, 1, 0, 0, 0,
-// 1, 1, 1, 1, 0, 0, 0,
-// 1, 1, 1, 1, 0, 0, 0,
-// 1, 1, 1, 1, 0, 0, 0,
-// 1, 1, 1, 1, 0, 0, 0,
-1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1,
+// Prewitt 5 (水平向左)
+1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 
+0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 
 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0,
-// Prewitt 6
-// 1, 0, 0, 0, 0, 0, 0,
-// 1, 1, 0, 0, 0, 0, 0,
-// 1, 1, 1, 0, 0, 0, 0,
-// 1, 1, 1, 1, 0, 0, 0,
-// 1, 1, 1, 1, 1, 0, 0,
-// 1, 1, 1, 1, 1, 1, 0,
-// 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1,
+// Prewitt 6 (对角线 左上)
+1, 1, 1, 1, 1, 1, 1, 
 0, 1, 1, 1, 1, 1, 1,
-0, 0, 1, 1, 1, 1, 1,
+0, 0, 1, 1, 1, 1, 1, 
 0, 0, 0, 1, 1, 1, 1,
-0, 0, 0, 0, 1, 1, 1,
-0, 0, 0, 0, 0, 1, 1,
+0, 0, 0, 0, 1, 1, 1, 
+0, 0, 0, 0, 0, 1, 1, 
 0, 0, 0, 0, 0, 0, 1,
-// Prewitt 7
-// 0, 0, 0, 0, 0, 0, 0,
-// 0, 0, 0, 0, 0, 0, 0,
-// 0, 0, 0, 0, 0, 0, 0,
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
+// Prewitt 7 (垂直向上)
+0, 0, 0, 1, 1, 1, 1, 
+0, 0, 0, 1, 1, 1, 1,
+0, 0, 0, 1, 1, 1, 1,
+0, 0, 0, 1, 1, 1, 1, 
 0, 0, 0, 1, 1, 1, 1,
 0, 0, 0, 1, 1, 1, 1,
 0, 0, 0, 1, 1, 1, 1,
+// Prewitt 8 (对角线 右上)
+0, 0, 0, 0, 0, 0, 1, 
+0, 0, 0, 0, 0, 1, 1, 
+0, 0, 0, 0, 1, 1, 1, 
 0, 0, 0, 1, 1, 1, 1,
-0, 0, 0, 1, 1, 1, 1,
-0, 0, 0, 1, 1, 1, 1,
-0, 0, 0, 1, 1, 1, 1,
-// Prewitt 8
-0, 0, 0, 0, 0, 0, 1,
-0, 0, 0, 0, 0, 1, 1,
-0, 0, 0, 0, 1, 1, 1,
-0, 0, 0, 1, 1, 1, 1,
-0, 0, 1, 1, 1, 1, 1,
-0, 1, 1, 1, 1, 1, 1,
+0, 0, 1, 1, 1, 1, 1, 
+0, 1, 1, 1, 1, 1, 1, 
 1, 1, 1, 1, 1, 1, 1
+//clang-format on
 };
-// clang-format on
+
 
 template <typename Float, int Dim>
   requires(Dim > 1 && Dim < 5 && is_floating_point_v<Float>)
@@ -136,73 +95,71 @@ static void
 refined_lee_filter(const vector<data::TypedArray<Float>> &in_elements,
                    int look_num, vector<vector<Float>> &out_elements) {
   assert(in_elements.size() == out_elements.size());
-  // initialize OpenCL
-  static cl::Context context = cl::Context::getDefault();
-  static cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
-  static cl::CommandQueue queue(context, device);
 
-  // Compile kernel program
-  static cl::Program program = [&]<typename Ty, int D>() {
-    cl::Program p(context, SRC_REFINEDLEEFILTER);
+  // 使用 OpenCLManager 获取资源
+  auto &ocl = ipsart::ocl::OpenCLManager::instance();
+
+  // 编译程序
+  string build_opts = []<typename Ty, int D>() -> string {
     if constexpr (std::is_same_v<Ty, float>) {
       if constexpr (D == 3) {
-        p.build(device, "-cl-std=CL2.0 -DMAT_SIZE_3X3");
+        return "-cl-std=CL2.0 -DMAT_SIZE_3X3";
       } else {
-        p.build(device, "-cl-std=CL2.0");
+        return "-cl-std=CL2.0";
       }
     } else {
-      /* Float is double */
       if constexpr (D == 3) {
-        p.build(device, "-cl-std=CL2.0 -DENABLE_FP64 -DMAT_SIZE_3X3");
+        return "-cl-std=CL2.0 -DENABLE_FP64 -DMAT_SIZE_3X3";
       } else {
-        p.build(device, "-cl-std=CL2.0 -DENABLE_FP64");
+        return "-cl-std=CL2.0 -DENABLE_FP64";
       }
     }
-    return p;
   }.template operator()<Float, Dim>();
-  static cl::Kernel krnl_span_calc(program, "span_calc");
-  static cl::Kernel krnl_filter(program, "page_filting");
+  cl::Program program =
+      ocl.getProgram("RefinedLeeFilter", build_opts, SRC_REFINEDLEEFILTER);
 
-  // set running parameters
+  // 创建内核
+  cl::Kernel krnl_span_calc(program, "span_calc");
+  cl::Kernel krnl_filter(program, "page_filting");
+
+  // 创建 Prewitt 算子的 buffer
+  cl::Buffer buf_prwt(ocl.context(), PrewittMask<Float>.begin(),
+                      PrewittMask<Float>.end(), true);
+
+  // 设置工作组参数
   auto dim = in_elements[0].getDimensions();
   int rows = dim[0];
   int cols = dim[1];
   int total_len = rows * cols;
   cl::NDRange global_size(rows, cols);
 
-  size_t max_size = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+  size_t max_size = ocl.device().getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
   size_t group_height = std::floor(std::sqrt(static_cast<double>(max_size)));
   cl::NDRange group_size(group_height, group_height);
 
-  // set in/out buffers - only need min inputs for span_calc + 1 reusable output
-  constexpr int MinInputs = (Dim == 2) ? 2 : 3;
-  constexpr int BufCount = MinInputs + 1;
-  std::array<cl::Buffer, BufCount> buf_inputs;
-  cl::Buffer buf_output;
-
-  // Initialize input buffers for span_calc
-  for (auto idx = 0; idx < MinInputs; idx++) {
-    auto ref_element = marray_to_span(in_elements[idx]);
-    buf_inputs[idx] =
-        cl::Buffer(context, ref_element.begin(), ref_element.end(), true);
+  // 设置计算 span 时的输入 buffer
+  // 在后面滤波时，我们复用计算 span 时的数据 buffer 填充矩阵元素
+  array<cl::Buffer, Dim> buf_inputs;
+  for (auto group = 0; group < Dim; group++) {
+    auto ref_element = ipsart::marray_to_span(in_elements[group]);
+    buf_inputs[group] =
+        cl::Buffer(ocl.context(), ref_element.begin(), ref_element.end(), true);
   }
-  // Reusable output buffer
-  buf_output = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(Float) * total_len);
 
-  // calculate span
-  cl::Buffer buf_span(context, CL_MEM_READ_WRITE, sizeof(Float) * total_len);
+  // 计算 span
+  cl::Buffer buf_span(ocl.context(), CL_MEM_READ_WRITE,
+                      sizeof(Float) * total_len);
   krnl_span_calc.setArg(0, buf_span);
   krnl_span_calc.setArg(1, buf_inputs[0]);
   krnl_span_calc.setArg(2, buf_inputs[1]);
   if constexpr (Dim == 3) {
     krnl_span_calc.setArg(3, buf_inputs[2]);
   }
-  queue.enqueueNDRangeKernel(krnl_span_calc, cl::NullRange, global_size,
-                             group_size);
-  // No explicit finish() needed - in-order queue guarantees span_calc completes
-  // before filter kernel starts
+  cl::Event ev_span_calc;
+  ocl.queue().enqueueNDRangeKernel(krnl_span_calc, cl::NullRange, global_size,
+                                   group_size, nullptr, &ev_span_calc);
 
-  // refined lee filting
+  // 准备滤波内核
   krnl_filter.setArg(0, rows);
   krnl_filter.setArg(1, cols);
   krnl_filter.setArg(2, buf_span);
@@ -210,35 +167,53 @@ refined_lee_filter(const vector<data::TypedArray<Float>> &in_elements,
   krnl_filter.setArg(3, shm_size);
   krnl_filter.setArg(4, shm_size);
   krnl_filter.setArg(5, sizeof(Float) * shm_size * shm_size * 2, nullptr);
-  cl::Buffer buf_prwt(context, PrewittMask<Float>.begin(),
-                      PrewittMask<Float>.end(), true);
   krnl_filter.setArg(6, buf_prwt);
   krnl_filter.setArg(7, look_num);
 
-  // For each input element: upload to buffer, run kernel, read result
-  const auto n_elements = in_elements.size();
-  for (auto idx = 0; idx < n_elements; idx++) {
-    // Reuse input buffer at index 0 for subsequent elements (after span_calc is done)
-    if (idx >= MinInputs) {
-      auto ref_element = marray_to_span(in_elements[idx]);
-      // Copy data into existing buffer
-      queue.enqueueWriteBuffer(buf_inputs[0], true, 0,
-                               sizeof(Float) * total_len,
-                               ref_element.data());
-    } else {
-      // First MinInputs elements already in buffers from initialization
-    }
-    // Reuse single output buffer
-    krnl_filter.setArg(8, buf_inputs[idx < MinInputs ? idx : 0]);
-    krnl_filter.setArg(9, buf_output);
-    queue.enqueueNDRangeKernel(krnl_filter, cl::NullRange, global_size,
-                               group_size);
-    queue.enqueueReadBuffer(buf_output, true, 0,
-                            sizeof(Float) * total_len,
-                            out_elements[idx].data());
+  // 设置存放滤波结果的 buffer，与之前创建的输入 buffer 对应
+  array<cl::Buffer, Dim> buf_outputs;
+  for (auto group = 0; group < Dim; group++) {
+    buf_outputs[group] =
+        cl::Buffer(ocl.context(), CL_MEM_WRITE_ONLY, sizeof(Float) * total_len);
   }
-  queue.finish();
+
+  // 开始滤波，分为 Dim 组，每组串行滤波 Dim 次
+  for (auto group = 0; group < Dim; group++) {
+    vector<cl::Event> filter_wait_list{ev_span_calc};
+
+    krnl_filter.setArg(8, buf_inputs[group]);
+    krnl_filter.setArg(9, buf_outputs[group]);
+
+    // 推入内核、读取结果、读入待滤波元素
+    for (auto progress = 0; progress < Dim; progress++) {
+      cl::Event ev_filter;
+      ocl.queue().enqueueNDRangeKernel(krnl_filter, cl::NullRange, global_size,
+                                       group_size, &filter_wait_list,
+                                       &ev_filter);
+
+      vector<cl::Event> rw_wait_list = {ev_filter};
+      cl::Event ev_read_buf;
+      ocl.queue().enqueueReadBuffer(buf_outputs[group], false, 0,
+                                    sizeof(Float) * total_len,
+                                    out_elements[progress * Dim + group].data(),
+                                    &rw_wait_list, &ev_read_buf);
+      filter_wait_list = {ev_read_buf};
+      if (progress < Dim - 1) {
+        cl::Event ev_write_buf;
+        auto ref_element =
+            ipsart::marray_to_span(in_elements[(progress + 1) * Dim + group]);
+        ocl.queue().enqueueWriteBuffer(
+            buf_inputs[group], false, 0, sizeof(Float) * total_len,
+            ref_element.data(), &rw_wait_list, &ev_write_buf);
+        filter_wait_list.push_back(ev_write_buf);
+      }
+    }
+  }
+
+  ocl.queue().finish();
 }
+
+namespace ipsart{
 
 vector<data::Array> RefinedLeeFilter(const vector<data::Array> &input,
                                      data::ArrayFactory &af) {
@@ -282,3 +257,5 @@ vector<data::Array> RefinedLeeFilter(const vector<data::Array> &input,
     return execute.template operator()<double>();
   }
 }
+
+} // namespace ipsart

@@ -18,18 +18,19 @@ classdef (Abstract) PolM2 < PolMat
     methods
 
         function obj = PolM2(m11, m22, m12_r, m12_i)
+            arguments
+                m11 {mustBeReal}
+                m22 {mustBeReal}
+                m12_r {mustBeReal}
+                m12_i {mustBeReal}
+            end
             obj.Dim = 2;
             [obj.Height,obj.Width] = size(m11);
 
-            obj.m11 = zeros(obj.Height, obj.Width, class(m11));
-            obj.m11(:,:) = m11;
-            obj.m22 = zeros(obj.Height, obj.Width, class(m11));
-            obj.m22(:,:) = m22;
-
-            obj.m12_r = zeros(obj.Height, obj.Width, class(m11));
-            obj.m12_r(:,:) = m12_r;
-            obj.m12_i = zeros(obj.Height, obj.Width, class(m11));
-            obj.m12_i(:,:) = m12_i;
+            obj.m11 = m11;
+            obj.m22 = m22;
+            obj.m12_r = m12_r;
+            obj.m12_i = m12_i;
         end
 
         function value = get.SPAN(obj)
@@ -41,7 +42,6 @@ classdef (Abstract) PolM2 < PolMat
         end
 
         function mat = MatAt(obj, row, col)
-            assert(row >= 1 && row <= obj.Height && col >= 1 && col <= obj.Width);
             mat = zeros(2, obj.Dtype);
             mat(1,1) = obj.m11(row,col);
             mat(1,2) = obj.m12_r(row,col) + 1i * obj.m12_i(row,col);
@@ -50,7 +50,12 @@ classdef (Abstract) PolM2 < PolMat
         end
 
         function page = PageAt(obj, x, y)
-            assert(x >= 1 && x <= 2 && y >= 1 && y <= 2);
+            arguments
+                obj
+                x {mustBeInRange(x, 1, 2)}
+                y {mustBeInRange(y, 1, 2)}
+            end
+
             if x == y
                 switch x
                     case 1
@@ -66,13 +71,12 @@ classdef (Abstract) PolM2 < PolMat
         end
 
         function outObj = MapPage(obj, func, varargin)
-            cls = class(obj);
-
             new_m11 = func(obj.m11, varargin{:});
             new_m22 = func(obj.m22, varargin{:});
             new_m12_r = func(obj.m12_r, varargin{:});
             new_m12_i = func(obj.m12_i, varargin{:});
 
+            cls = class(obj);
             if cls == "PolC2"
                 outObj = feval(cls, new_m11, new_m22, new_m12_r, new_m12_i, obj.PolType);
             else

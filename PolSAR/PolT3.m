@@ -2,17 +2,6 @@ classdef PolT3 < PolM3
 
     methods (Static)
         function T3 = fromS2(hh, hv, vh, vv)
-            arguments (Input)
-                hh (:,:)
-                hv (:,:)
-                vh (:,:)
-                vv (:,:)
-            end
-
-            arguments (Output)
-                T3 PolT3
-            end
-
             xx = (hv + vh) / sqrt(2);
             t11 = (hh + vv) .* conj(hh + vv) / 2;
             t12 = (hh + vv) .* conj(hh - vv) / 2;
@@ -21,8 +10,8 @@ classdef PolT3 < PolM3
             t23 = (hh - vv) .* conj(xx);
             t33 = 2 * xx .* conj(xx);
 
-            T3 = PolT3(t11, t22, t33, real(t12), real(t13), real(t23), imag(t12), ...
-                imag(t13), imag(t23));
+            T3 = PolT3(t11, t22, t33, real(t12), real(t13), real(t23), ...
+                imag(t12), imag(t13), imag(t23));
         end
     end
 
@@ -40,12 +29,14 @@ classdef PolT3 < PolM3
             T(3,2,:,:) = conj(T(2,3,:,:));
             T(3,3,:,:) = obj.m33;
 
-            M = [1 0 1; 1 0 -1; 0 sqrt(2) 0]' / sqrt(2);
+            M = cast([1 0 1; 1 0 -1; 0 sqrt(2) 0]' / sqrt(2), obj.Dtype);
             C = pagemtimes(pagemtimes(M, T), M');
 
-            C3 = PolC3(squeeze(C(1,1,:,:)), squeeze(C(2,2,:,:)), squeeze(C(3,3,:,:)), ...
-                real(squeeze(C(1,2,:,:))), real(squeeze(C(1,3,:,:))), real(squeeze(C(2,3,:,:))), ...
-                imag(squeeze(C(1,2,:,:))), imag(squeeze(C(1,3,:,:))), imag(squeeze(C(2,3,:,:))));
+            C3 = PolC3(squeeze(C(1,1,:,:)), squeeze(C(2,2,:,:)), ...
+                squeeze(C(3,3,:,:)), real(squeeze(C(1,2,:,:))), ...
+                real(squeeze(C(1,3,:,:))), real(squeeze(C(2,3,:,:))), ...
+                imag(squeeze(C(1,2,:,:))), imag(squeeze(C(1,3,:,:))), ...
+                imag(squeeze(C(2,3,:,:))));
         end
 
     end

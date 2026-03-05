@@ -11,8 +11,8 @@ classdef PolC3 < PolM3
             c23 = xx .* conj(vv);
             c33 = vv .* conj(vv);
 
-            C3 = PolC3(c11, c22, c33, real(c12), real(c13), real(c23), imag(c12), ...
-                imag(c13), imag(c23));
+            C3 = PolC3(c11, c22, c33, real(c12), real(c13), real(c23), ...
+                imag(c12), imag(c13), imag(c23));
         end
 
     end
@@ -31,12 +31,14 @@ classdef PolC3 < PolM3
             C(3,2,:,:) = conj(C(2,3,:,:));
             C(3,3,:,:) = obj.m33;
 
-            M = [1 0 1; 1 0 -1; 0 sqrt(2) 0] / sqrt(2);
+            M = cast([1 0 1; 1 0 -1; 0 sqrt(2) 0] / sqrt(2), obj.Dtype);
             T = pagemtimes(pagemtimes(M, C), M');
 
-            T3 = PolT3(squeeze(T(1,1,:,:)), squeeze(T(2,2,:,:)), squeeze(T(3,3,:,:)), ...
-                real(squeeze(T(1,2,:,:))), real(squeeze(T(1,3,:,:))), real(squeeze(T(2,3,:,:))), ...
-                imag(squeeze(T(1,2,:,:))), imag(squeeze(T(1,3,:,:))), imag(squeeze(T(2,3,:,:))));
+            T3 = PolT3(squeeze(T(1,1,:,:)), squeeze(T(2,2,:,:)), ...
+                squeeze(T(3,3,:,:)), real(squeeze(T(1,2,:,:))), ...
+                real(squeeze(T(1,3,:,:))), real(squeeze(T(2,3,:,:))), ...
+                imag(squeeze(T(1,2,:,:))), imag(squeeze(T(1,3,:,:))), ...
+                imag(squeeze(T(2,3,:,:))));
         end
 
     end

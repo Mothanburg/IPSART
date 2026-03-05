@@ -20,11 +20,12 @@ classdef PolT2 < PolM2
             T(1,2,:,:) = obj.m12_r + 1i * obj.m12_i;
             T(2,1,:,:) = conj(T(1,2,:,:));
             T(2,2,:,:) = obj.m22;
-            M = [1, 1; 1, -1]';
+            
+            M = cast([1, 1; 1, -1]', obj.Dtype);
             C = pagemtimes(pagemtimes(M, T), M');
 
-            C2 = PolC2(squeeze(C(1,1,:,:)), squeeze(C(2,2,:,:)), real(squeeze(C(1,2,:,:))), ...
-                imag(squeeze(C(1,2,:,:))), "HHVV");
+            C2 = PolC2(squeeze(C(1,1,:,:)), squeeze(C(2,2,:,:)), ...
+                real(squeeze(C(1,2,:,:))), imag(squeeze(C(1,2,:,:))), "HHVV");
         end
 
     end

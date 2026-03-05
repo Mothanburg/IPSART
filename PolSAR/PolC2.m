@@ -36,7 +36,8 @@ classdef PolC2 < PolM2
             C(1,2,:,:) = obj.m12_r + 1i * obj.m12_i;
             C(2,1,:,:) = conj(C(1,2,:,:));
             C(2,2,:,:) = obj.m22;
-            M = [1, 1; 1, -1];
+
+            M = cast([1, 1; 1, -1], obj.Dtype);
             T = pagemtimes(pagemtimes(M, C), M');
 
             T2 = PolT2(squeeze(T(1,1,:,:)), squeeze(T(2,2,:,:)), ...

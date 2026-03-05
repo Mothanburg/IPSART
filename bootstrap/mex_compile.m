@@ -23,7 +23,7 @@ for i = 1:length(cl_files)
         fprintf(fid, '#pragma once\n');
         macro_name = upper(basename);
         fprintf(fid, '// content of ''%s''\n', cl_files(i).name);
-        fprintf(fid, 'inline constexpr auto SRC_%s = R"OPENCLC(\n', macro_name);
+        fprintf(fid, 'inline constexpr char SRC_%s[] = R"OPENCLC(\n', macro_name);
         content = fileread(src_path);
         fprintf(fid, '%s', content);
         fprintf(fid, '\n)OPENCLC";\n');

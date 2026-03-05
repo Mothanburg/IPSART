@@ -16,10 +16,9 @@ OpenCLManager &OpenCLManager::instance() {
 OpenCLManager::OpenCLManager()
     : device_(pickFastestDevice()), context_(device_),
       queue_(context_, device_) {
-  // 初始化命令队列，根据设备支持情况配置
+  // 默认创建顺序执行队列，若设备支持，则创建乱序队列
   auto queue_properties = device_.getInfo<CL_DEVICE_QUEUE_PROPERTIES>();
   if (queue_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE) {
-    // 需要重新创建支持乱序执行的队列
     queue_ = cl::CommandQueue(context_, device_,
                               CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
   }
@@ -68,7 +67,7 @@ cl::Device OpenCLManager::pickFastestDevice() {
 cl::Program OpenCLManager::getProgram(const string &function_name,
                                       const string &build_opts,
                                       const char *source) {
-  string cache_key = function_name + "||" + build_opts;
+  string cache_key = function_name + build_opts;
 
   // 查询缓存
   auto it = program_cache_.find(cache_key);

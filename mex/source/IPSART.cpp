@@ -69,6 +69,7 @@ public:
           inputs | views::drop(1) | ranges::to<vector>();
       auto results = dispatch(method_name, params);
       ranges::move(results, outputs.begin());
+
     } catch (exception &e) {
       // 捕获异常，并将错误信息传递回 MATLAB
       auto matlab = this->getEngine();
@@ -79,6 +80,7 @@ public:
       string msg =
           format("Error occurred in {}.\nException type: {}\nMessage: {}\n",
                  u8_method_name, typeid(e).name(), e.what());
+
       // 如果是 OpenCL 错误，附加错误码和设备信息
       if (cl::Error *cl_e = dynamic_cast<cl::Error *>(&e)) {
         msg += format("OpenCL error code: {}\n", cl_e->err());
@@ -91,8 +93,8 @@ public:
     }
 #if !defined(NDEBUG)
     catch (...) {
-      // 在 DEBUG 模式下，开启 /EHsa
-      // 编译后，捕获底层异常（如访问违规、断言失败等）
+      // DEBUG 模式且开启 /EHsa 后
+      // 捕获底层异常（如访问违规、断言失败等）
       auto matlab = this->getEngine();
       string u8_method_name(from_range,
                             *method_name | views::transform([](char16_t c) {

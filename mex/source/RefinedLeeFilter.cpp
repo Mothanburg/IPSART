@@ -20,7 +20,7 @@ using namespace matlab;
 /// 用于 Refined Lee 滤波器的边缘检测
 template <typename Float>
 inline constexpr std::array<Float, 7 * 7 * 8> PrewittMask{
-// clang-format off
+    // clang-format off
 // Prewitt 1 (水平向右)
 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 0, 0, 0, 0, 
@@ -133,8 +133,19 @@ refined_lee_filter(const vector<data::TypedArray<Float>> &in_elements,
   int total_len = rows * cols;
   cl::NDRange global_size(rows, cols);
 
-  size_t max_size = ocl.device().getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-  size_t group_height = std::floor(std::sqrt(static_cast<double>(max_size)));
+  // 查询每个内核支持的最大工作组大小，取较小值以确保两者都兼容
+  // 使用 CL_KERNEL_WORK_GROUP_SIZE（内核级）而非 CL_DEVICE_MAX_WORK_GROUP_SIZE（设备级）
+  // 因为内核编译后的实际限制可能小于设备限制（如由于寄存器压力、共享内存占用等）
+  size_t max_wg_span =
+      krnl_span_calc.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(ocl.device());
+  size_t max_wg_filter =
+      krnl_filter.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(ocl.device());
+  size_t max_wg_size = std::min(max_wg_span, max_wg_filter);
+
+  // 取平方根得到 2D 工作组维度，确保不超过内核支持的最大值
+  size_t group_height = static_cast<size_t>(std::floor(std::sqrt(static_cast<double>(max_wg_size))));
+  if (group_height < 1)
+    group_height = 1;
   cl::NDRange group_size(group_height, group_height);
 
   // 设置计算 span 时的输入 buffer

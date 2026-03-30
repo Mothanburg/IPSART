@@ -87,6 +87,8 @@ while true
     end
 
     property_name = token.value;
+    % ENVI headers may contain property names with multiple words (e.g., "map info").
+    % These are represented as separate WORD tokens and joined with underscores.
     while true
         [token,n_char] = get_next_token(line, n_char);
         if token.type ~= "WORD"
@@ -102,7 +104,7 @@ while true
 
     % Parse property value
     [token,n_char] = get_next_token(line, n_char);
-    if token.type == "VALUE" || token.type == "WORD"
+    if token.type == "STRING" || token.type == "WORD"
         property_value = token.value;
         while true
             [token,n_char] = get_next_token(line, n_char);
@@ -112,24 +114,28 @@ while true
             property_value = property_value + " " + token.value;
         end
     elseif token.type == "L_BRACE"
-        if line(end) == '}'
-            content = line(n_char:end-1);
+        brace_pos = strfind(line, '}');
+        if ~isempty(brace_pos) && brace_pos(1) >= n_char
+            content = line(n_char:brace_pos(1)-1);
         else
             content = line(n_char:end);
             n_line = n_line + 1;
-
-            while n_line <= length(lines) && ~endsWith(lines(n_line), "}")
-                content = ['\n' content char(lines(n_line))];
-                n_line = n_line + 1;
+            while n_line <= length(lines)
+                next_line = char(lines(n_line));
+                brace_pos = strfind(next_line, '}');
+                if ~isempty(brace_pos)
+                    content = [content '\n' next_line(1:brace_pos(1)-1)];
+                    break
+                else
+                    content = [content '\n' next_line];
+                    n_line = n_line + 1;
+                end
             end
-
             if n_line > length(lines)
                 error("Unclosed '}' in .hdr file");
             end
-
-            content = [content char(lines(n_line))];
         end
-        property_value = string(content(1:end-1));
+        property_value = string(content);
     else
         error("Invalid property value in line %d.", n_line);
     end
@@ -152,7 +158,7 @@ while idx <= length(text) && isspace(text(idx))
 end
 
 % valid type: NULL (no more token) WORD (starts with letter), ASSIGN ('='), L_BRACE ('{'),
-% VALUE (any non-space ascii character)
+% STRING (any non-space ascii character that is not a WORD)
 
 if idx > length(text)
     token.type = "NULL";
@@ -178,7 +184,7 @@ else
         content = [content text(idx)];
         idx = idx + 1;
     end
-    token.type = "VALUE";
+    token.type = "STRING";
     token.value = string(content);
     ptr = idx;
 end
@@ -193,8 +199,12 @@ switch property_name
     case "bands"  % band num
         value = str2double(value_string);
     case "byte_order"  % byte order, little edian: 0, big edain: 1
-        edians = ["ieee-le" "ieee-be"];
-        value = edians(str2double(value_string) + 1);
+        if ismember(value_string, ["ieee-le", "ieee-be"])
+            value = value_string;
+        else
+            edians = ["ieee-le" "ieee-be"];
+            value = edians(str2double(value_string) + 1);
+        end
     case "data_type"
         type = str2double(value_string);
         switch type
@@ -226,7 +236,8 @@ switch property_name
     case "header_offset"
         value = str2double(value_string);
     case "interleave"
-        assert("bsq" == value_string || "bil" == value_string || "bip" == value_string)
+        validatestring(value_string, ["bsq", "bil", "bip"], ...
+            'fn_lookup_valuetype', 'interleave');
         value = value_string;
     case "samples"
         value = str2double(value_string);

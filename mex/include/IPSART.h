@@ -65,6 +65,39 @@ std::vector<matlab::data::Array>
 RefinedLeeFilter(const std::vector<matlab::data::Array> &input,
                  matlab::data::ArrayFactory &af);
 
+namespace PolBPT {
+
+/**
+ * @brief BPT 构建
+ * @param input 极化矩阵元素
+ * @param af MATLAB ArrayFactory
+ * @return BPT 合并记录
+ */
+std::vector<matlab::data::Array>
+Build(const std::vector<matlab::data::Array> &input,
+      matlab::data::ArrayFactory &af);
+
+/**
+ * @brief BPT 寻根
+ * @param input 每个节点的父节点 id (1*N int32向量)
+ * @param af MATLAB ArrayFactory
+ * @return 父节点列表
+ */
+std::vector<matlab::data::Array>
+FindRoot(const std::vector<matlab::data::Array> &input,
+         matlab::data::ArrayFactory &af);
+
+/**
+ * @brief BPT 剪枝
+ * @param input 合并记录 (us, vs, phis) + 同质度阈值 (double)
+ * @param af MATLAB ArrayFactory
+ * @return 剪枝后的父节点列表
+ */
+std::vector<matlab::data::Array>
+Prune(const std::vector<matlab::data::Array> &input,
+      matlab::data::ArrayFactory &af);
+} // namespace PolBPT
+
 // ============================================================================
 // 工具函数
 // ============================================================================

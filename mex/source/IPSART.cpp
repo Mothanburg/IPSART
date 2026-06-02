@@ -34,7 +34,10 @@ static const unordered_map<u16string, MethodHandler> method_registry = {
     {u"Multilook", ipsart::Multilook},
     {u"RefinedLeeFilter", ipsart::RefinedLeeFilter},
     {u"Yamaguchi", ipsart::Yamaguchi},
-    {u"G4U", ipsart::G4U}};
+    {u"G4U", ipsart::G4U},
+    {u"PolBPT::Build", ipsart::PolBPT::Build},
+    {u"PolBPT::FindRoot", ipsart::PolBPT::FindRoot},
+    {u"PolBPT::Prune", ipsart::PolBPT::Prune}};
 
 class MexFunction : public matlab::mex::Function {
 private:

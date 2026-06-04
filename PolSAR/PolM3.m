@@ -1,3 +1,7 @@
+% PolM3 - 3x3 极化矩阵的抽象模型
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef (Abstract) PolM3 < PolMat
 
     properties

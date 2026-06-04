@@ -1,3 +1,7 @@
+% internal__RefinedLeeFilter_gpu - Internal GPU-accelerated implementation of Refined Lee filter
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function result = internal__RefinedLeeFilting_gpu(M, look_num)
 
 global IPSARTMexHost;

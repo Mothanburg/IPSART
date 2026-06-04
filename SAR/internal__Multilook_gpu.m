@@ -1,3 +1,7 @@
+% internal__Multilook_gpu - Internal GPU-accelerated implementation of multi-looking
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function result = internal__Multilook_gpu(image, row_look, col_look)
 
 if ~ismember(class(image), ["double" "single" "int32"])

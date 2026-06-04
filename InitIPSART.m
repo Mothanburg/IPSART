@@ -1,3 +1,7 @@
+% InitIPSART - 导入IPSART模块并设置线程池
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function InitIPSART(options)
 
 arguments
@@ -31,6 +35,12 @@ addpath(fullfile(root, "bin"));
 % Use threadpool as parallel resources
 delete(gcp('nocreate')); % Close the old parallel pool
 parpool("Threads");
+
+% Set up the out-of-process runner
+global IPSARTMexHost;
+if isempty(IPSARTMexHost)
+    IPSARTMexHost = mexhost();
+end
 
 % ------------- You can ONLY edit the part below ------------- %
 

@@ -1,3 +1,7 @@
+% Averagelook - 图像均值滤波
+% 
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function result = Averagelook(image, rowLook, colLook)
 
 arguments

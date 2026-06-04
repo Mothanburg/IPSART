@@ -1,3 +1,7 @@
+% UnaryOp - 将函数封装为单参数函数（一元谓词）
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function unary = UnaryOp(func, position, vargin)
 
 arguments

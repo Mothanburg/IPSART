@@ -1,4 +1,7 @@
-% 全极化 SAR 图像的二分分区树（Binary Partition Tree，BPT）构建
+% PolBPT - 极化BPT构建
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef PolBPT
 
     properties

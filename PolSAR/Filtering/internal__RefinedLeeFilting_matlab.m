@@ -1,3 +1,7 @@
+% internal__RefinedLeeFilter_matlab - Internal MATLAB implementation of Refined Lee filter
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function result = internal__RefinedLeeFilting_matlab(M, lookNum)
 
 height = M.Height;

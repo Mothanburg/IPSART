@@ -1,3 +1,7 @@
+% PolC4 - 4x4 极化协方差矩阵
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef PolC4 < PolM4
 
     methods (Static)

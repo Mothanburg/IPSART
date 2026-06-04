@@ -1,4 +1,7 @@
-% Yamaguchi four-component decomposition (old version, no negetive power elimination, no de-orientaion)
+% YamaguchiOld - 旧的Yamaguchi四分量分解（无去定向处理）
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [Ps,Pd,Pv,Ph] = YamaguchiOld(C3)
 
 arguments

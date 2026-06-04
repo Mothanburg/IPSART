@@ -1,3 +1,7 @@
+% internal__CloudePottier_native - Internal MEX bridge for Cloude-Pottier decomposition
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [H,alpha,A] = internal__CloudePottier_native(M)
 
 global IPSARTMexHost;

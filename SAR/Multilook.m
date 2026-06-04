@@ -1,3 +1,7 @@
+% Multilook - SAR图像多视处理
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function result = Multilook(image, rowLook, colLook)
 
 arguments

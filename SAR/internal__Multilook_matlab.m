@@ -1,3 +1,7 @@
+% internal__Multilook_matlab - Internal MATLAB implementation of multi-looking
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function result = internal__Multilook_matlab( ...
     image, row_look, col_look)
 

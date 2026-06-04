@@ -1,3 +1,7 @@
+% PolM2 - 2x2 极化矩阵的抽象模型
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef (Abstract) PolM2 < PolMat
 
     properties

@@ -1,3 +1,7 @@
+% PolC2 - 2x2 极化协方差矩阵
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef PolC2 < PolM2
 
     properties

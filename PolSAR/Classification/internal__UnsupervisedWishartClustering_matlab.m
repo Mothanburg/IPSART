@@ -1,3 +1,7 @@
+% internal__UnsupervisedWishartClustering_matlab - Internal MATLAB implementation of Wishart clustering
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function clustered = internal__UnsupervisedWishartClustering_matlab( ...
     C, initClasses, numClasses, threshold, maxIter)
 

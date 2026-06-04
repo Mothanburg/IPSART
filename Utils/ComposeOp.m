@@ -1,3 +1,7 @@
+% ComposeOp - 将多个单参数函数（一元谓词）按顺序组合成一个
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function composed = ComposeOp(unaries)
 
 arguments (Repeating)

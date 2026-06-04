@@ -1,3 +1,8 @@
+% PolT2 - 2x2 极化相干矩阵
+% 该数据模型仅适用于HH+VV这种交替双极化模式，不适用于绝大部分双/简缩极化
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef PolT2 < PolM2
 
     methods (Static)

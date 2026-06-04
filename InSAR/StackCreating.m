@@ -1,3 +1,9 @@
+% StackCreating - 叠加SAR图像序列
+% 给定主图像以及所有从图像的同名点坐标，将所有的从图像平移到主图像位置，并取所有图像的交集使它们大小一致
+% 返回对象中包含剪裁后的图像以及剪裁掉的行数和列数
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [varargout] = StackCreating(master, masterPSPoint, slave, slavePSPoint)
 
 arguments

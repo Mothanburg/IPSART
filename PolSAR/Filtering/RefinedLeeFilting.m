@@ -1,3 +1,8 @@
+% RefinedLeeFilter - 精致Lee滤波
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
+%
 % Refined Lee filter with 7x7 window
 function result = RefinedLeeFilting(M, lookNum)
 arguments

@@ -1,5 +1,8 @@
-% Freeman-Durden three component decomposition with de-orientation
-% 10.1109/TGRS.2010.2041242
+% FreemanDurdenRot - 去定向的Freeman-Durden三分量分解
+% 参考：10.1109/TGRS.2010.2041242
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART 
 function [Ps,Pd,Pv] = FreemanDurdenRot(T3)
 
 arguments

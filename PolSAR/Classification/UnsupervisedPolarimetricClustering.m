@@ -1,3 +1,7 @@
+% UnsupervisedPolarimetricClustering - 使用Wishart或G0分布的无监督极化SAR图像分类
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [clustered, initClasses] = UnsupervisedPolarimetricClustering(M, classifierName, initClasses, options)
 
 arguments

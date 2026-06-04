@@ -1,3 +1,7 @@
+% internal__UnsupervisedG0Clustering_matlab - Internal MATLAB implementation of G0 clustering
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function clustered = internal__UnsupervisedG0Clustering_matlab( ...
     C, lookNum, initClasses, numClasses, threshold, maxIter)
 

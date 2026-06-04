@@ -1,3 +1,7 @@
+% PolM4 - 4x4 极化矩阵的抽象模型
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef (Abstract) PolM4 < PolMat
 
     properties

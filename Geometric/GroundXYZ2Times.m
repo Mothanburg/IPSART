@@ -1,3 +1,7 @@
+% GroundXYZ2Times - 将地表的ECEF坐标转换为该位置的方位向和距离向采集时间
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [azimuthTime,rangeTime] = ...
     GroundXYZ2Times(groundPos, orbitPlyn, options)
 

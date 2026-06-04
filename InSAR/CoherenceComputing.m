@@ -1,3 +1,7 @@
+% CoherenceComputing - 干涉图相干性计算
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function coh = CoherenceComputing(master, slave, windowSize)
 
 arguments

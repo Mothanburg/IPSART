@@ -1,9 +1,11 @@
-% Read data with ENVI data format
-% Parameters
-%    filePath: full path of the data
-%    fileExtensionPolicy: Determine how to find the header file
-%       "Sub" [default]: substitution the data file's extension into .hdr
-%       "Append": append .hdr to the data file's name
+% ReadRSData - 兼容ENVI格式的数据读取器
+% fileExtensionPolicy参数用于指定数据头文件的命名方式
+%   "SUB" 表示数据文件"a.x"对应的头文件名称为"a.hdr"
+%   "APPEND" 表示数据文件"b.y"对应的头文件名称为"b.y.hdr"
+% 如果数据文件没有后缀名，请使用"APPEND"
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function data = ReadRSData(filePath, options)
 
 arguments

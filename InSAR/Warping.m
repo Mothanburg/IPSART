@@ -1,3 +1,8 @@
+% Warping - 对配准后的图像进行重采样
+% 此函数具备一定的可用性
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function result = Warping(slave, gcpMaster, gcpSlave, gcpCorr, polyn_order, method)
 arguments
     slave

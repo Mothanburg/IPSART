@@ -1,5 +1,8 @@
-% Model-based decomposition for dual-pol
-% 10.1109/TGRS.2021.3137588
+% DualPolModelBased - 基于散射模型的双极化分解
+% 参考：10.1109/TGRS.2021.3137588
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [ms,mv,alpha,delta] = DualPolModelBased(C2, polTx)
 
 arguments

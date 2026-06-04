@@ -1,11 +1,12 @@
-% Store data as ENVI data format
-% Parameters
-%    data: array with up to 3 dimensions
-%    filePath: full path of the data
-%    fileExtensionPolicy: Determine the file name of the generated header file
-%       "Sub" [default]: substitution the data file's extension into .hdr
-%       "Append": append .hdr to the data file's name 
-%    useLowPrecision: whether cast double/int64 to single/int32 when storing 
+% StoreRSData - 兼容ENVI格式的数据保存器
+% fileExtensionPolicy参数用于指定数据头文件的命名方式
+%   "SUB" 表示数据文件"a.x"对应的头文件名称为"a.hdr"
+%   "APPEND" 表示数据文件"b.y"对应的头文件名称为"b.y.hdr"
+% useLowPrecision如果设置为true，则统一使用float32/int32保存
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
+
 function StoreRSData(data, filePath, options)
 
 arguments

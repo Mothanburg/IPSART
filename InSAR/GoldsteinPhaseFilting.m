@@ -1,3 +1,8 @@
+% GoldsteinPhaseFilter - Goldstein相位滤波
+% 注意！！此函数尚未完善，不建议使用
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function ifgFlt = GoldsteinPhaseFilting(ifg, windowSize, overlap, alphaOrCorr)
 arguments
     ifg (:,:) {mustBeNumeric}

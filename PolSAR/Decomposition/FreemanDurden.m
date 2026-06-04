@@ -1,4 +1,7 @@
-% Freeman-Durden three component decomposition
+% FreemanDurden - Freeman-Durden三分量分解
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [Ps,Pd,Pv] = FreemanDurden(C3)
 
 arguments

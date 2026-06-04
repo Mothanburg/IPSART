@@ -1,3 +1,8 @@
+% mex_compile - 编译MEX库的脚本
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
+
 source_path = '..\mex';
 
 % 外部的Eigen和opencl sdk路径，根据自己的路径选填

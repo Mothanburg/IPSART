@@ -1,3 +1,7 @@
+% Hist2d - 2D 热力图
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function Hist2d(x, y, options)
 
 arguments

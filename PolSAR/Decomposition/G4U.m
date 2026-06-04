@@ -1,4 +1,7 @@
-% General four component decomposition with unitary matrix transformation
+% G4U - General four-component decomposition with unitary matrix transformation
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [Ps,Pd,Pv,Ph] = G4U(T3)
 
 arguments

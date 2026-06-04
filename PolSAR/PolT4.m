@@ -1,3 +1,7 @@
+% PolT4 - 4x4 极化相干矩阵
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef PolT4 < PolM4
 
     methods (Static)

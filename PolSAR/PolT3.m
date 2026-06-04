@@ -1,3 +1,7 @@
+% PolT3 - 3x3 极化相干矩阵
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef PolT3 < PolM3
 
     methods (Static)

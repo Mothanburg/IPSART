@@ -1,3 +1,7 @@
+% internal__CloudePottier_matlab - Internal MATLAB implementation of Cloude-Pottier decomposition
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [H,alpha,A] = internal__CloudePottier_matlab(M)
 
 height = M.Height;

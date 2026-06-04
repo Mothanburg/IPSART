@@ -1,4 +1,7 @@
-% Yamaguchi four-component decomposition (with negetive power elimination)
+% Yamaguchi - Yamaguchi四分量分解
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [Ps,Pd,Pv,Ph] = Yamaguchi(T3)
 
 arguments

@@ -1,3 +1,7 @@
+% internal__G4U_native - Internal MEX bridge for G4U decomposition
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [Ps,Pd,Pv,Ph] = internal__G4U_native(T3)
 
 global IPSARTMexHost;

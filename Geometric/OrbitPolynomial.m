@@ -1,9 +1,13 @@
+% OrbitPolynomial - 轨道多项式对象
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef OrbitPolynomial
 
     properties
-        Coeff
-        Degree
-        TimeRange
+        Coeff     % 轨道多项式系数
+        Degree    % 轨道多项式阶数
+        TimeRange % 轨道的时间范围
     end
 
 
@@ -70,6 +74,7 @@ classdef OrbitPolynomial
 
     methods (Static)
 
+        % 根据轨道记录对象构造指定阶数（degree）的轨道多项式
         function obj = FromOrbitVector(orbitVector, degree)
             arguments
                 orbitVector OrbitVector

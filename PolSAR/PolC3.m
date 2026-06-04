@@ -1,3 +1,7 @@
+% PolC3 - 3x3 极化协方差矩阵
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef PolC3 < PolM3
 
     methods (Static)

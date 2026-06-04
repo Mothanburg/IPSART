@@ -1,3 +1,7 @@
+% internal__G4U_matlab - Internal MATLAB implementation of G4U decomposition
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [Ps,Pd,Pv,Ph] = internal__G4U_matlab(T3)
 
 height = T3.Height;

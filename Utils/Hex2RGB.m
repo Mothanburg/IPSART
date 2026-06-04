@@ -1,3 +1,7 @@
+% Hex2RGB - 将HEX颜色字符串转换为MATLAB RGB数值
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function rgb = Hex2RGB(hex)
     hex = char(upper(hex));
     exchange_list='0123456789ABCDEF#';

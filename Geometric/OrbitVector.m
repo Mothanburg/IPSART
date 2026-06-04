@@ -1,3 +1,7 @@
+% OrbitVector - 轨道记录对象
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 classdef OrbitVector
 
     properties

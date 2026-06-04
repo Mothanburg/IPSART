@@ -1,3 +1,7 @@
+% internal__Yamaguchi_matlab - Internal MATLAB implementation of Yamaguchi decomposition
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [Ps,Pd,Pv,Ph] = internal__Yamaguchi_matlab(T3)
 
 height = T3.Height;

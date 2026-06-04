@@ -1,3 +1,7 @@
+% internal__Yamaguchi_native - Internal MEX bridge for Yamaguchi decomposition
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [Ps,Pd,Pv,Ph] = internal__Yamaguchi_native(T3)
 
 global IPSARTMexHost;

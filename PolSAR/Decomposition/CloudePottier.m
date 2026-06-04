@@ -1,4 +1,7 @@
-% Cloude-Pottier H/a/A decomposition
+% CloudePottier - Cloude-Pottier H/α/A 分解
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [H,alpha,A] = CloudePottier(M)
 
 arguments

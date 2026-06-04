@@ -1,3 +1,7 @@
+% LookNumber - 根据像素间隔计算最佳多视视数
+%
+% Author: Yinghao Hu
+% Repository: https://github.com/Mothanburg/IPSART
 function [azimuthLook,rangeLook,resolution] = GetNumLook(azimuthSpacing, rangeSpacing, incidenceAngle, gridSize)
 
 arguments

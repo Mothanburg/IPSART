@@ -17,6 +17,7 @@ CppProperties.json
 
 # lib files
 thirdparty/*
+!thirdparty/README.md
 
 # auto generated
 /include/autogen/

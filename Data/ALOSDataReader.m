@@ -1,3 +1,0 @@
-classdef ALOSDataReader < SARDataReader
-
-end

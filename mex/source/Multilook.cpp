@@ -24,9 +24,9 @@ static TResult<Float> multilook(const data::TypedArray<Float> &input,
   auto &ocl = ipsart::ocl::OpenCLManager::instance();
 
   // 编译程序
-  string build_opts = std::is_same_v<Float, double>
-                          ? "-cl-std=CL2.0 -DENABLE_FP64"
-                          : "-cl-std=CL2.0";
+  constexpr auto build_opts = std::is_same_v<Float, double>
+                                  ? "-cl-std=CL2.0 -DENABLE_FP64"
+                                  : "-cl-std=CL2.0";
   cl::Program program = ocl.getProgram("Multilook", build_opts, SRC_MULTILOOK);
 
   // 创建 kernel

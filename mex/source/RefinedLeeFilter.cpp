@@ -100,7 +100,7 @@ refined_lee_filter(const vector<data::TypedArray<Float>> &in_elements,
   auto &ocl = ipsart::ocl::OpenCLManager::instance();
 
   // 编译程序
-  string build_opts = []<typename Ty, int D>() -> string {
+  constexpr auto build_opts = []<typename Ty, int D>() {
     if constexpr (std::is_same_v<Ty, float>) {
       if constexpr (D == 3) {
         return "-cl-std=CL2.0 -DMAT_SIZE_3X3";
